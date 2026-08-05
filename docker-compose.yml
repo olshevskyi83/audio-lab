@@ -1,0 +1,25 @@
+services:
+  audio-lab:
+    build: .
+    container_name: audio-lab
+    restart: unless-stopped
+
+    user: "1000:1000"
+
+    environment:
+      AUDIO_ROOT: /remote/Audio
+      CORE_URL: http://ai-gateway:8080
+      MAX_UPLOAD_MB: 2048
+
+    ports:
+      - "3011:8080"
+
+    volumes:
+      - /home/homelabuser/RemoteDrop/Audio:/remote/Audio
+
+    networks:
+      - ai-network
+
+networks:
+  ai-network:
+    external: true

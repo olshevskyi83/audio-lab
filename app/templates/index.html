@@ -1,0 +1,1394 @@
+<!doctype html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Audio Lab</title>
+
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+            --background: #0f1117;
+            --panel: #191d25;
+            --panel-soft: #222733;
+            --border: #303744;
+            --text: #f1f4f8;
+            --muted: #929baa;
+            --blue: #537dff;
+            --green: #65d889;
+            --yellow: #f2c35c;
+            --red: #ef7373;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--background);
+            color: var(--text);
+        }
+
+        main {
+            width: min(1180px, calc(100% - 28px));
+            margin: 28px auto 60px;
+        }
+
+        h1, h2, p {
+            margin-top: 0;
+        }
+
+        h1 {
+            margin-bottom: 6px;
+        }
+
+        h2 {
+            font-size: 21px;
+        }
+
+        .subtitle,
+        .muted {
+            color: var(--muted);
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 19px;
+            margin-top: 17px;
+        }
+
+        .notice {
+            padding: 13px 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        .notice.success {
+            background: rgba(101, 216, 137, .12);
+            border: 1px solid rgba(101, 216, 137, .38);
+        }
+
+        .notice.error {
+            background: rgba(239, 115, 115, .12);
+            border: 1px solid rgba(239, 115, 115, .38);
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+            gap: 10px;
+        }
+
+        .metric {
+            background: var(--panel-soft);
+            border-radius: 10px;
+            padding: 12px;
+            min-width: 0;
+        }
+
+        .metric span {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .metric strong {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ok {
+            color: var(--green);
+        }
+
+        .warning {
+            color: var(--yellow);
+        }
+
+        .danger {
+            color: var(--red);
+        }
+
+        .upload-form {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: center;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            min-width: 0;
+            padding: 11px;
+            border-radius: 9px;
+            border: 1px solid var(--border);
+            background: var(--panel-soft);
+            color: var(--text);
+        }
+
+        button,
+        .button {
+            border: 0;
+            border-radius: 8px;
+            padding: 9px 13px;
+            background: var(--blue);
+            color: white;
+            font: inherit;
+            font-size: 14px;
+            text-decoration: none;
+            text-align: center;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        button.secondary,
+        .button.secondary {
+            background: #3a414f;
+        }
+
+        button.danger-button {
+            background: #a84646;
+        }
+
+        .task-list {
+            display: grid;
+            gap: 11px;
+        }
+
+        .task {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 16px;
+            align-items: center;
+            background: var(--panel-soft);
+            border-radius: 11px;
+            padding: 14px;
+        }
+
+        .task-info {
+            min-width: 0;
+        }
+
+        .filename {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-weight: 650;
+        }
+
+        .task-meta {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #343b49;
+            font-size: 12px;
+            font-weight: 650;
+        }
+
+        .badge.running,
+        .badge.waiting {
+            color: var(--yellow);
+        }
+
+        .badge.completed,
+        .badge.indexed {
+            color: var(--green);
+        }
+
+        .badge.failed {
+            color: var(--red);
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .task-actions form {
+            margin: 0;
+        }
+
+        .file-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .file-table th,
+        .file-table td {
+            padding: 11px 8px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            text-align: left;
+        }
+
+        .file-table th {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .file-name-cell {
+            width: auto;
+        }
+
+        .file-size-cell {
+            width: 90px;
+            white-space: nowrap;
+        }
+
+        .file-actions-cell {
+            width: 220px;
+        }
+
+        .file-name {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 7px;
+            flex-wrap: wrap;
+        }
+
+        .file-actions form {
+            margin: 0;
+        }
+
+        .empty {
+            color: var(--muted);
+            margin-bottom: 0;
+        }
+
+        details {
+            margin-top: 18px;
+        }
+
+        summary {
+            cursor: pointer;
+            color: var(--muted);
+        }
+
+        .audio-input-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(300px, .7fr);
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .input-card {
+            background: var(--panel-soft);
+            border-radius: 11px;
+            padding: 15px;
+            min-width: 0;
+        }
+
+        .input-card h3 {
+            margin: 0 0 12px;
+            font-size: 16px;
+        }
+
+        .record-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 9px;
+        }
+
+        .record-button {
+            background: #b54444;
+        }
+
+        .record-button.recording {
+            animation: record-pulse 1.2s infinite;
+        }
+
+        .stop-button {
+            background: #454d5d;
+        }
+
+        .record-status {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .record-timer {
+            min-width: 58px;
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+            color: var(--red);
+        }
+
+        .record-preview {
+            display: none;
+            width: 100%;
+            margin-top: 13px;
+        }
+
+        @keyframes record-pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(239, 115, 115, .35);
+            }
+
+            50% {
+                box-shadow: 0 0 0 8px rgba(239, 115, 115, 0);
+            }
+        }
+
+        .search-form {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-input {
+            width: 100%;
+            min-width: 0;
+            padding: 11px 13px;
+            border-radius: 9px;
+            border: 1px solid var(--border);
+            background: var(--panel-soft);
+            color: var(--text);
+            font: inherit;
+        }
+
+        .search-input:focus {
+            outline: 2px solid rgba(83, 125, 255, .45);
+            border-color: var(--blue);
+        }
+
+        .search-results {
+            display: grid;
+            gap: 11px;
+            margin-top: 16px;
+        }
+
+        .search-result {
+            background: var(--panel-soft);
+            border-radius: 11px;
+            padding: 15px;
+            min-width: 0;
+        }
+
+        .search-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .search-result-source {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-weight: 650;
+        }
+
+        .search-score {
+            flex: 0 0 auto;
+            color: var(--green);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .search-result-text {
+            margin: 12px 0 0;
+            color: #d8dde6;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .search-result-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 11px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        @media (max-width: 760px) {
+            .upload-form,
+            .search-form,
+            .audio-input-grid,
+            .task {
+                grid-template-columns: 1fr;
+            }
+
+            .task-actions {
+                justify-content: flex-start;
+            }
+
+            .file-table,
+            .file-table tbody,
+            .file-table tr,
+            .file-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .file-table thead {
+                display: none;
+            }
+
+            .file-table tr {
+                padding: 13px 0;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .file-table td {
+                border: 0;
+                padding: 4px 0;
+            }
+
+            .file-actions {
+                justify-content: flex-start;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<main>
+    <header>
+        <h1>Audio Lab</h1>
+        <p class="subtitle">
+            Транскрипція, керування результатами та індексація в Qdrant
+        </p>
+    </header>
+
+    {% if success %}
+    <div class="notice success">{{ success }}</div>
+    {% endif %}
+
+    {% if error %}
+    <div class="notice error">{{ error }}</div>
+    {% endif %}
+
+    <section class="panel">
+        <h2>AI Platform</h2>
+
+        {% if status %}
+        <div class="metrics">
+            <div class="metric">
+                <span>Homelab Core</span>
+                <strong class="{{ 'ok' if status.status == 'ok' else 'danger' }}">
+                    {{ status.status }}
+                </strong>
+            </div>
+
+            <div class="metric">
+                <span>Mac</span>
+                <strong class="{{ 'ok' if status.mac.online else 'danger' }}">
+                    {{ 'Online' if status.mac.online else 'Offline' }}
+                </strong>
+            </div>
+
+            <div class="metric">
+                <span>LM Studio</span>
+                <strong>
+                    {{ 'Ready' if status.llm.lm_studio else 'Offline' }}
+                </strong>
+            </div>
+
+            <div class="metric">
+                <span>Mac Whisper</span>
+                <strong class="{% if status.whisper.mac_running %}ok{% elif active_tasks %}warning{% endif %}">
+                    {% if status.whisper.mac_running %}
+                        Running
+                    {% elif active_tasks %}
+                        Starting / fallback
+                    {% else %}
+                        Sleeping
+                    {% endif %}
+                </strong>
+            </div>
+
+            <div class="metric">
+                <span>Server Whisper</span>
+                <strong class="{{ 'ok' if status.whisper.server_running else 'danger' }}">
+                    {{ 'Ready' if status.whisper.server_running else 'Offline' }}
+                </strong>
+            </div>
+
+            <div class="metric">
+                <span>Queue</span>
+                <strong>
+                    {{ status.queue.waiting }} waiting /
+                    {{ status.queue.running }} running
+                </strong>
+            </div>
+        </div>
+        {% else %}
+        <p class="danger">Homelab Core недоступний.</p>
+        {% endif %}
+    </section>
+
+    <section class="panel">
+        <h2>Нова транскрипція</h2>
+
+        <div class="audio-input-grid">
+            <div class="input-card">
+                <h3>Завантажити файл</h3>
+
+                <form
+                    id="upload-form"
+                    class="upload-form"
+                    action="/upload"
+                    method="post"
+                    enctype="multipart/form-data"
+                >
+                    <input
+                        id="audio-file"
+                        type="file"
+                        name="file"
+                        accept="audio/*,video/*"
+                        required
+                    >
+
+                    <button type="submit">
+                        Додати в чергу
+                    </button>
+                </form>
+
+                <p class="muted" style="margin: 10px 0 0;">
+                    Максимальний розмір: {{ max_upload_mb }} MB.
+                </p>
+            </div>
+
+            <div class="input-card">
+                <h3>Записати з мікрофона</h3>
+
+                <div class="record-controls">
+                    <button
+                        id="record-start"
+                        class="record-button"
+                        type="button"
+                    >
+                        ● Почати запис
+                    </button>
+
+                    <button
+                        id="record-stop"
+                        class="stop-button"
+                        type="button"
+                        disabled
+                    >
+                        ■ Завершити
+                    </button>
+
+                    <span
+                        id="record-timer"
+                        class="record-timer"
+                    >
+                        00:00
+                    </span>
+                </div>
+
+                <div
+                    id="record-status"
+                    class="record-status"
+                    style="margin-top: 10px;"
+                >
+                    Мікрофон не активний.
+                </div>
+
+                <audio
+                    id="record-preview"
+                    class="record-preview"
+                    controls
+                ></audio>
+
+                <div
+                    id="record-actions"
+                    class="record-controls"
+                    style="display: none; margin-top: 12px;"
+                >
+                    <button
+                        id="record-upload"
+                        type="button"
+                    >
+                        Додати в чергу
+                    </button>
+
+                    <button
+                        id="record-delete"
+                        class="danger-button"
+                        type="button"
+                    >
+                        Видалити запис
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Пошук у транскрипціях</h2>
+
+        <form
+            class="search-form"
+            method="get"
+            action="/"
+        >
+            <input
+                class="search-input"
+                type="search"
+                name="q"
+                value="{{ search_query or '' }}"
+                placeholder="Наприклад: що говорили про погоду?"
+                autocomplete="off"
+            >
+
+            <button type="submit">
+                Шукати
+            </button>
+
+            {% if search_query %}
+            <a
+                class="button secondary"
+                href="/"
+            >
+                Очистити
+            </a>
+            {% endif %}
+        </form>
+
+        {% if search_error %}
+        <div class="notice error">
+            {{ search_error }}
+        </div>
+        {% endif %}
+
+        {% if search_query and not search_error %}
+        <p class="muted" style="margin: 13px 0 0;">
+            Знайдено результатів: {{ search_count }}
+        </p>
+
+        {% if search_results %}
+        <div class="search-results">
+            {% for result in search_results %}
+            <article class="search-result">
+                <div class="search-result-header">
+                    <div
+                        class="search-result-source"
+                        title="{{ result.source_filename or 'Без назви' }}"
+                    >
+                        {{ result.source_filename or 'Без назви' }}
+                    </div>
+
+                    <div class="search-score">
+                        {{ ((result.score or 0) * 100)|round(1) }}%
+                    </div>
+                </div>
+
+                <p class="search-result-text">
+                    {{ result.text or 'Текст відсутній' }}
+                </p>
+
+                <div class="search-result-meta">
+                    <span>
+                        Chunk:
+                        {{ (result.chunk_index or 0) + 1 }}
+                        /
+                        {{ result.chunk_count or 1 }}
+                    </span>
+
+                    <span>
+                        Project:
+                        {{ result.project or '—' }}
+                    </span>
+
+                    <span title="{{ result.task_id }}">
+                        Task:
+                        {{ result.task_id or '—' }}
+                    </span>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty" style="margin-top: 15px;">
+            Нічого релевантного не знайдено.
+        </p>
+        {% endif %}
+        {% endif %}
+    </section>
+
+    <section id="tasks" class="panel">
+        <h2>Активні задачі</h2>
+
+        {% if active_tasks %}
+        <div class="task-list">
+            {% for task in active_tasks %}
+            <article class="task">
+                <div class="task-info">
+                    <div class="filename" title="{{ task.source_file or task.file_path }}">
+                        {{ task.source_file or task.file_path or 'Без назви' }}
+                    </div>
+
+                    <div class="task-meta">
+                        <span class="badge {{ task.status }}">
+                            {{ task.status }}
+                        </span>
+
+                        <span>Спроба {{ task.attempts }}/{{ task.max_attempts }}</span>
+                        <span>Task: {{ task.id }}</span>
+                    </div>
+
+                    {% if task.error %}
+                    <p class="danger" style="margin: 8px 0 0;">
+                        {{ task.error }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <div class="task-actions">
+                    <span class="badge running">Обробка…</span>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty">Активних задач немає.</p>
+        {% endif %}
+    </section>
+
+    <section class="panel">
+        <h2>Завершені транскрипції</h2>
+
+        {% if completed_tasks %}
+        <div class="task-list">
+            {% for task in completed_tasks %}
+            <article class="task">
+                <div class="task-info">
+                    <div class="filename" title="{{ task.source_file or task.file_path }}">
+                        {{ task.source_file or task.file_path or 'Без назви' }}
+                    </div>
+
+                    <div class="task-meta">
+                        <span class="badge completed">completed</span>
+
+                        {% set index_status =
+                            task.index.index_status
+                            if task.index
+                            else 'not_indexed'
+                        %}
+
+                        <span class="badge {{ index_status }}">
+                            Qdrant: {{ index_status }}
+                        </span>
+
+                        {% if task.index and task.index.chunk_count %}
+                        <span>{{ task.index.chunk_count }} chunks</span>
+                        {% endif %}
+
+                        <span>Task: {{ task.id }}</span>
+                    </div>
+
+                    {% if task.index and task.index.error %}
+                    <p class="danger" style="margin: 8px 0 0;">
+                        {{ task.index.error }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <div class="task-actions">
+                    {% set output_files =
+                        task.result.output_files
+                        if task.result and task.result.output_files
+                        else []
+                    %}
+
+                    {% for output in output_files %}
+                        {% set output_name = output.split('/')[-1] %}
+
+                        {% if output_name.endswith('.txt') %}
+                        <a
+                            class="button"
+                            href="/view/ready/{{ output_name }}"
+                        >
+                            Відкрити TXT
+                        </a>
+                        {% endif %}
+
+                        {% if output_name.endswith('.json') %}
+                        <a
+                            class="button secondary"
+                            href="/view/ready/{{ output_name }}"
+                        >
+                            JSON
+                        </a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if not task.index or task.index.index_status in ['not_indexed', 'failed'] %}
+                    <form method="post" action="/tasks/{{ task.id }}/index">
+                        <button type="submit">
+                            Додати в Qdrant
+                        </button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="/tasks/{{ task.id }}/reindex">
+                        <button class="secondary" type="submit">
+                            Переіндексувати
+                        </button>
+                    </form>
+
+                    <form
+                        method="post"
+                        action="/tasks/{{ task.id }}/unindex"
+                        onsubmit="return confirm('Видалити транскрипцію з Qdrant?')"
+                    >
+                        <button class="danger-button" type="submit">
+                            Видалити з Qdrant
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty">Завершених транскрипцій немає.</p>
+        {% endif %}
+    </section>
+
+    {% if failed_tasks %}
+    <section class="panel">
+        <h2>Помилки</h2>
+
+        <div class="task-list">
+            {% for task in failed_tasks %}
+            <article class="task">
+                <div class="task-info">
+                    <div class="filename">
+                        {{ task.source_file or task.file_path }}
+                    </div>
+
+                    <div class="task-meta">
+                        <span class="badge failed">failed</span>
+                        <span>Task: {{ task.id }}</span>
+                    </div>
+
+                    {% if task.error %}
+                    <p class="danger" style="margin: 8px 0 0;">
+                        {{ task.error }}
+                    </p>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="panel">
+        <h2>Архів аудіо</h2>
+
+        {% set archive_files = folders.archive %}
+
+        {% if archive_files %}
+        <table class="file-table">
+            <thead>
+                <tr>
+                    <th class="file-name-cell">Файл</th>
+                    <th class="file-size-cell">Розмір</th>
+                    <th class="file-actions-cell">Дії</th>
+                </tr>
+            </thead>
+
+            <tbody>
+            {% for file in archive_files %}
+                <tr>
+                    <td class="file-name-cell">
+                        <span class="file-name" title="{{ file.name }}">
+                            {{ file.name }}
+                        </span>
+                    </td>
+
+                    <td class="file-size-cell">
+                        {{ (file.size / 1024 / 1024)|round(2) }} MB
+                    </td>
+
+                    <td class="file-actions-cell">
+                        <div class="file-actions">
+                            <a
+                                class="button secondary"
+                                href="/file/archive/{{ file.name }}"
+                            >
+                                Завантажити
+                            </a>
+
+                            <form
+                                method="post"
+                                action="/delete/archive/{{ file.name }}"
+                                onsubmit="return confirm('Видалити аудіофайл?')"
+                            >
+                                <button class="danger-button" type="submit">
+                                    Видалити
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">Архів порожній.</p>
+        {% endif %}
+    </section>
+
+    <details class="panel">
+        <summary>Технічні папки</summary>
+
+        <p style="margin-top: 15px;">
+            incoming: {{ folders.incoming|length }} ·
+            processing: {{ folders.processing|length }} ·
+            ready: {{ folders.ready|length }} ·
+            failed: {{ folders.failed|length }}
+        </p>
+    </details>
+</main>
+
+<script>
+    const fileInput = document.getElementById("audio-file");
+    const uploadForm = document.getElementById("upload-form");
+    const searchInput = document.querySelector(".search-input");
+
+    const recordStart = document.getElementById("record-start");
+    const recordStop = document.getElementById("record-stop");
+    const recordTimer = document.getElementById("record-timer");
+    const recordStatus = document.getElementById("record-status");
+    const recordPreview = document.getElementById("record-preview");
+    const recordActions = document.getElementById("record-actions");
+    const recordUpload = document.getElementById("record-upload");
+    const recordDelete = document.getElementById("record-delete");
+
+    const hasActiveTasks = {{ 'true' if active_tasks else 'false' }};
+
+    let mediaRecorder = null;
+    let mediaStream = null;
+    let recordedChunks = [];
+    let recordedBlob = null;
+    let recordedMimeType = "";
+    let recordedObjectUrl = null;
+    let recordingStartedAt = null;
+    let timerHandle = null;
+    let recordingActive = false;
+    let uploadInProgress = false;
+
+    function formatDuration(totalSeconds) {
+        const minutes = Math.floor(totalSeconds / 60)
+            .toString()
+            .padStart(2, "0");
+
+        const seconds = Math.floor(totalSeconds % 60)
+            .toString()
+            .padStart(2, "0");
+
+        return `${minutes}:${seconds}`;
+    }
+
+    function updateTimer() {
+        if (!recordingStartedAt) {
+            recordTimer.textContent = "00:00";
+            return;
+        }
+
+        const elapsed = Math.floor(
+            (Date.now() - recordingStartedAt) / 1000
+        );
+
+        recordTimer.textContent = formatDuration(elapsed);
+    }
+
+    function chooseRecordingMimeType() {
+        const candidates = [
+            "audio/webm;codecs=opus",
+            "audio/webm",
+            "audio/mp4",
+        ];
+
+        for (const mimeType of candidates) {
+            if (
+                window.MediaRecorder &&
+                MediaRecorder.isTypeSupported(mimeType)
+            ) {
+                return mimeType;
+            }
+        }
+
+        return "";
+    }
+
+    function extensionForMimeType(mimeType) {
+        if (mimeType.includes("mp4")) {
+            return "m4a";
+        }
+
+        if (mimeType.includes("ogg")) {
+            return "ogg";
+        }
+
+        return "webm";
+    }
+
+    async function uploadRecording(blob, mimeType) {
+        uploadInProgress = true;
+        recordStatus.textContent = "Завантаження запису на сервер…";
+
+        const now = new Date();
+        const timestamp = now
+            .toISOString()
+            .replaceAll(":", "-")
+            .replaceAll(".", "-");
+
+        const extension = extensionForMimeType(mimeType);
+        const filename = `recording-${timestamp}.${extension}`;
+
+        const formData = new FormData();
+        formData.append(
+            "file",
+            new File(
+                [blob],
+                filename,
+                {
+                    type: mimeType || blob.type,
+                }
+            )
+        );
+
+        try {
+            const response = await fetch(
+                "/upload",
+                {
+                    method: "POST",
+                    body: formData,
+                }
+            );
+
+            if (!response.ok) {
+                const message = await response.text();
+                throw new Error(
+                    message || `HTTP ${response.status}`
+                );
+            }
+
+            recordStatus.textContent =
+                "Запис додано в чергу транскрипції.";
+
+            window.setTimeout(() => {
+                window.location.href =
+                    "/?success="
+                    + encodeURIComponent(
+                        "Запис із мікрофона додано в чергу."
+                    )
+                    + "#tasks";
+            }, 700);
+
+        } catch (error) {
+            uploadInProgress = false;
+            recordStatus.textContent =
+                `Не вдалося завантажити запис: ${error.message}`;
+
+            recordStart.disabled = false;
+        }
+    }
+
+    async function startRecording() {
+        if (recordedObjectUrl) {
+            URL.revokeObjectURL(recordedObjectUrl);
+        }
+
+        recordedBlob = null;
+        recordedMimeType = "";
+        recordedObjectUrl = null;
+        recordedChunks = [];
+
+        recordPreview.removeAttribute("src");
+        recordPreview.load();
+        recordPreview.style.display = "none";
+        recordActions.style.display = "none";
+
+        if (!window.isSecureContext) {
+            recordStatus.textContent =
+                "Запис із мікрофона потребує HTTPS. "
+                + "Відкрийте Audio Lab через захищену адресу.";
+            return;
+        }
+
+        if (
+            !navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia
+        ) {
+            recordStatus.textContent =
+                "Браузер не надає доступу до мікрофона.";
+            return;
+        }
+
+        if (!window.MediaRecorder) {
+            recordStatus.textContent =
+                "Браузер не підтримує запис MediaRecorder.";
+            return;
+        }
+
+        try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                },
+            });
+
+            const mimeType = chooseRecordingMimeType();
+
+            mediaRecorder = mimeType
+                ? new MediaRecorder(
+                    mediaStream,
+                    { mimeType }
+                )
+                : new MediaRecorder(mediaStream);
+
+            recordedChunks = [];
+
+            mediaRecorder.addEventListener(
+                "dataavailable",
+                (event) => {
+                    if (event.data && event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                }
+            );
+
+            mediaRecorder.addEventListener(
+                "stop",
+                () => {
+                    const actualMimeType =
+                        mediaRecorder.mimeType ||
+                        mimeType ||
+                        "audio/webm";
+
+                    const blob = new Blob(
+                        recordedChunks,
+                        {
+                            type: actualMimeType,
+                        }
+                    );
+
+                    if (blob.size === 0) {
+                        recordStatus.textContent =
+                            "Запис порожній.";
+
+                        recordStart.disabled = false;
+                        recordStop.disabled = true;
+                        return;
+                    }
+
+                    if (recordedObjectUrl) {
+                        URL.revokeObjectURL(recordedObjectUrl);
+                    }
+
+                    recordedBlob = blob;
+                    recordedMimeType = actualMimeType;
+                    recordedObjectUrl = URL.createObjectURL(blob);
+
+                    recordPreview.src = recordedObjectUrl;
+                    recordPreview.style.display = "block";
+                    recordActions.style.display = "flex";
+
+                    recordStart.disabled = false;
+                    recordStop.disabled = true;
+                    recordUpload.disabled = false;
+                    recordDelete.disabled = false;
+
+                    recordStatus.textContent =
+                        "Запис готовий. Прослухайте його, "
+                        + "а потім додайте в чергу або видаліть.";
+                }
+            );
+
+            mediaRecorder.start(1000);
+
+            recordingActive = true;
+            recordingStartedAt = Date.now();
+
+            timerHandle = window.setInterval(
+                updateTimer,
+                250
+            );
+
+            recordStart.disabled = true;
+            recordStop.disabled = false;
+            recordStart.classList.add("recording");
+            recordStatus.textContent = "Йде запис…";
+
+        } catch (error) {
+            recordStatus.textContent =
+                "Немає доступу до мікрофона: "
+                + error.message;
+        }
+    }
+
+    function stopRecording() {
+        if (
+            !mediaRecorder ||
+            mediaRecorder.state === "inactive"
+        ) {
+            return;
+        }
+
+        mediaRecorder.stop();
+
+        if (mediaStream) {
+            for (const track of mediaStream.getTracks()) {
+                track.stop();
+            }
+        }
+
+        recordingActive = false;
+        recordingStartedAt = null;
+
+        window.clearInterval(timerHandle);
+        updateTimer();
+
+        recordStop.disabled = true;
+        recordStart.classList.remove("recording");
+        recordStatus.textContent =
+            "Запис завершено. Підготовка прослуховування…";
+    }
+
+    recordStart.addEventListener(
+        "click",
+        startRecording
+    );
+
+    recordStop.addEventListener(
+        "click",
+        stopRecording
+    );
+
+    recordUpload.addEventListener(
+        "click",
+        async () => {
+            if (!recordedBlob) {
+                recordStatus.textContent =
+                    "Немає готового запису для завантаження.";
+                return;
+            }
+
+            recordUpload.disabled = true;
+            recordDelete.disabled = true;
+            recordStart.disabled = true;
+
+            await uploadRecording(
+                recordedBlob,
+                recordedMimeType || recordedBlob.type || "audio/webm"
+            );
+        }
+    );
+
+    recordDelete.addEventListener(
+        "click",
+        () => {
+            if (recordedObjectUrl) {
+                URL.revokeObjectURL(recordedObjectUrl);
+            }
+
+            recordedBlob = null;
+            recordedMimeType = "";
+            recordedObjectUrl = null;
+            recordedChunks = [];
+
+            recordPreview.pause();
+            recordPreview.removeAttribute("src");
+            recordPreview.load();
+            recordPreview.style.display = "none";
+            recordActions.style.display = "none";
+
+            recordStart.disabled = false;
+            recordStop.disabled = true;
+            recordUpload.disabled = false;
+            recordDelete.disabled = false;
+
+            recordTimer.textContent = "00:00";
+            recordStatus.textContent =
+                "Запис видалено. Можна зробити новий.";
+        }
+    );
+
+    uploadForm.addEventListener(
+        "submit",
+        () => {
+            uploadInProgress = true;
+        }
+    );
+
+    /*
+     * Refresh only while tasks are active.
+     * Never refresh while the user is typing, recording,
+     * selecting a file or uploading.
+     */
+    window.setInterval(() => {
+        const fileSelected =
+            fileInput &&
+            fileInput.files &&
+            fileInput.files.length > 0;
+
+        const searchIsActive =
+            searchInput &&
+            (
+                document.activeElement === searchInput ||
+                searchInput.value.trim().length > 0
+            );
+
+        const formIsActive =
+            document.activeElement &&
+            (
+                document.activeElement.tagName === "INPUT" ||
+                document.activeElement.tagName === "TEXTAREA"
+            );
+
+        const canRefresh =
+            hasActiveTasks &&
+            !document.hidden &&
+            !fileSelected &&
+            !searchIsActive &&
+            !formIsActive &&
+            !recordingActive &&
+            !recordedBlob &&
+            !uploadInProgress;
+
+        if (canRefresh) {
+            window.location.reload();
+        }
+    }, 5000);
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ filename }}</title>
+
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #111318;
+            color: #eef1f6;
+        }
+
+        main {
+            width: min(1000px, calc(100% - 32px));
+            margin: 32px auto;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            background: #1a1e26;
+            border: 1px solid #303642;
+            border-radius: 14px;
+            padding: 20px;
+            line-height: 1.55;
+        }
+
+        a {
+            color: #8eadff;
+        }
+    </style>
+</head>
+
+<body>
+<main>
+    <p><a href="/">← Назад до Audio Lab</a></p>
+    <h1>{{ filename }}</h1>
+    <p>Папка: {{ folder }}</p>
+    <pre>{{ content }}</pre>
+</main>
+</body>
+</html>
