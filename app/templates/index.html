@@ -2,21 +2,36 @@
 <html lang="uk">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
     <title>Audio Lab</title>
 
     <style>
         :root {
             color-scheme: dark;
-            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+            font-family:
+                Inter,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
 
             --background: #0f1117;
             --panel: #191d25;
             --panel-soft: #222733;
+            --panel-hover: #282e3a;
             --border: #303744;
+
             --text: #f1f4f8;
             --muted: #929baa;
+
             --blue: #537dff;
+            --blue-hover: #648aff;
             --green: #65d889;
             --yellow: #f2c35c;
             --red: #ef7373;
@@ -28,6 +43,7 @@
 
         body {
             margin: 0;
+
             background: var(--background);
             color: var(--text);
         }
@@ -37,16 +53,26 @@
             margin: 28px auto 60px;
         }
 
-        h1, h2, p {
+        h1,
+        h2,
+        h3,
+        p {
             margin-top: 0;
         }
 
         h1 {
             margin-bottom: 6px;
+            font-size: 30px;
         }
 
         h2 {
+            margin-bottom: 15px;
             font-size: 21px;
+        }
+
+        h3 {
+            margin-bottom: 12px;
+            font-size: 16px;
         }
 
         .subtitle,
@@ -55,53 +81,30 @@
         }
 
         .panel {
-            background: var(--panel);
+            margin-top: 17px;
+            padding: 19px;
+
             border: 1px solid var(--border);
             border-radius: 15px;
-            padding: 19px;
-            margin-top: 17px;
+
+            background: var(--panel);
         }
 
         .notice {
-            padding: 13px 15px;
-            border-radius: 10px;
             margin-top: 15px;
+            padding: 13px 15px;
+
+            border-radius: 10px;
         }
 
         .notice.success {
-            background: rgba(101, 216, 137, .12);
-            border: 1px solid rgba(101, 216, 137, .38);
+            border: 1px solid rgba(101, 216, 137, 0.38);
+            background: rgba(101, 216, 137, 0.12);
         }
 
         .notice.error {
-            background: rgba(239, 115, 115, .12);
-            border: 1px solid rgba(239, 115, 115, .38);
-        }
-
-        .metrics {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
-            gap: 10px;
-        }
-
-        .metric {
-            background: var(--panel-soft);
-            border-radius: 10px;
-            padding: 12px;
-            min-width: 0;
-        }
-
-        .metric span {
-            display: block;
-            color: var(--muted);
-            font-size: 12px;
-            margin-bottom: 4px;
-        }
-
-        .metric strong {
-            display: block;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            border: 1px solid rgba(239, 115, 115, 0.38);
+            background: rgba(239, 115, 115, 0.12);
         }
 
         .ok {
@@ -116,36 +119,40 @@
             color: var(--red);
         }
 
-        .upload-form {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
-            gap: 12px;
-            align-items: center;
-        }
-
-        input[type="file"] {
-            width: 100%;
-            min-width: 0;
-            padding: 11px;
-            border-radius: 9px;
-            border: 1px solid var(--border);
-            background: var(--panel-soft);
-            color: var(--text);
-        }
-
         button,
         .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            min-height: 38px;
+            padding: 9px 13px;
+
             border: 0;
             border-radius: 8px;
-            padding: 9px 13px;
+
             background: var(--blue);
-            color: white;
+            color: #fff;
+
             font: inherit;
             font-size: 14px;
-            text-decoration: none;
+            line-height: 1.2;
+
             text-align: center;
-            cursor: pointer;
+            text-decoration: none;
             white-space: nowrap;
+
+            cursor: pointer;
+        }
+
+        button:hover,
+        .button:hover {
+            background: var(--blue-hover);
+        }
+
+        button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
         }
 
         button.secondary,
@@ -153,23 +160,424 @@
             background: #3a414f;
         }
 
-        button.danger-button {
+        button.secondary:hover,
+        .button.secondary:hover {
+            background: #485160;
+        }
+
+        button.danger-button,
+        .button.danger-button {
             background: #a84646;
+        }
+
+        button.danger-button:hover,
+        .button.danger-button:hover {
+            background: #bd5151;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(145px, 1fr));
+
+            gap: 10px;
+        }
+
+        .metric {
+            min-width: 0;
+            padding: 12px;
+
+            border-radius: 10px;
+
+            background: var(--panel-soft);
+        }
+
+        .metric span {
+            display: block;
+
+            margin-bottom: 4px;
+
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .metric strong {
+            display: block;
+
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .audio-input-grid {
+            display: grid;
+            grid-template-columns:
+                minmax(0, 1fr)
+                minmax(320px, 0.75fr);
+
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .input-card {
+            min-width: 0;
+            padding: 15px;
+
+            border-radius: 11px;
+
+            background: var(--panel-soft);
+        }
+
+        .upload-form {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+
+            gap: 12px;
+            align-items: center;
+        }
+
+        input[type="file"],
+        .search-input,
+        .rag-input {
+            width: 100%;
+            min-width: 0;
+
+            border: 1px solid var(--border);
+            border-radius: 9px;
+
+            background: var(--panel-soft);
+            color: var(--text);
+
+            font: inherit;
+        }
+
+        input[type="file"] {
+            padding: 11px;
+        }
+
+        .search-input {
+            padding: 11px 13px;
+        }
+
+        .rag-input {
+            min-height: 96px;
+            padding: 12px 13px;
+
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        input[type="file"]:focus,
+        .search-input:focus,
+        .rag-input:focus {
+            outline: 2px solid rgba(83, 125, 255, 0.45);
+            border-color: var(--blue);
+        }
+
+        .record-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+
+            gap: 9px;
+        }
+
+        .record-button {
+            background: #b54444;
+        }
+
+        .record-button:hover {
+            background: #c95050;
+        }
+
+        .record-button.recording {
+            animation: record-pulse 1.2s infinite;
+        }
+
+        .stop-button {
+            background: #454d5d;
+        }
+
+        .record-status {
+            margin-top: 10px;
+
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .record-timer {
+            min-width: 58px;
+
+            color: var(--red);
+
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+        }
+
+        .record-preview {
+            display: none;
+
+            width: 100%;
+            margin-top: 13px;
+        }
+
+        @keyframes record-pulse {
+            0%,
+            100% {
+                box-shadow:
+                    0 0 0 0
+                    rgba(239, 115, 115, 0.35);
+            }
+
+            50% {
+                box-shadow:
+                    0 0 0 8px
+                    rgba(239, 115, 115, 0);
+            }
+        }
+
+        .rag-form {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+
+            gap: 10px;
+            align-items: start;
+        }
+
+        .rag-loading {
+            display: none;
+
+            margin-top: 13px;
+
+            color: var(--yellow);
+        }
+
+        .rag-error {
+            display: none;
+
+            margin-top: 13px;
+
+            color: var(--red);
+        }
+
+        .rag-answer {
+            display: none;
+
+            margin-top: 16px;
+            padding: 17px;
+
+            border-radius: 11px;
+
+            background: var(--panel-soft);
+        }
+
+        .rag-answer-text {
+            margin: 0;
+
+            line-height: 1.65;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .rag-sources {
+            display: grid;
+
+            width: 100%;
+            margin-top: 16px;
+
+            gap: 10px;
+        }
+
+        .rag-sources:empty {
+            display: none;
+        }
+
+        .rag-source {
+            display: block;
+
+            width: 100%;
+            min-width: 0;
+
+            padding: 8px 13px;
+
+            border: 1px solid var(--border);
+            border-radius: 9px;
+
+            background: rgba(255, 255, 255, 0.025);
+        }
+
+        .rag-source-toggle {
+            display: flex;
+
+            width: 100%;
+            min-height: 40px;
+            padding: 4px 0;
+
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 14px;
+
+            border: 0;
+            background: transparent;
+            color: var(--text);
+
+            text-align: left;
+
+            cursor: pointer;
+        }
+
+        .rag-source-toggle:hover {
+            background: transparent;
+        }
+
+        .rag-source-name {
+            display: block;
+
+            min-width: 0;
+
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+
+            font-weight: 650;
+        }
+
+        .rag-source-right {
+            display: flex;
+            flex: 0 0 auto;
+            align-items: center;
+
+            gap: 12px;
+        }
+
+        .rag-source-score {
+            color: var(--green);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .rag-source-arrow {
+            color: var(--muted);
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .rag-source-body {
+            display: none;
+
+            margin-top: 8px;
+            padding: 12px 0 3px;
+
+            border-top: 1px solid var(--border);
+        }
+
+        .rag-source-body.open {
+            display: block;
+        }
+
+        .rag-source-text {
+            margin: 0;
+
+            color: #d8dde6;
+
+            line-height: 1.55;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .search-form {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-results {
+            display: grid;
+
+            gap: 11px;
+            margin-top: 16px;
+        }
+
+        .search-result {
+            min-width: 0;
+            padding: 15px;
+
+            border-radius: 11px;
+
+            background: var(--panel-soft);
+        }
+
+        .search-result-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+
+            gap: 12px;
+        }
+
+        .search-result-source {
+            min-width: 0;
+
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+
+            font-weight: 650;
+        }
+
+        .search-score {
+            flex: 0 0 auto;
+
+            color: var(--green);
+
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .search-result-text {
+            margin: 12px 0 0;
+
+            color: #d8dde6;
+
+            line-height: 1.55;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .search-result-meta,
+        .task-meta {
+            display: flex;
+            flex-wrap: wrap;
+
+            gap: 10px;
+            margin-top: 9px;
+
+            color: var(--muted);
+            font-size: 12px;
         }
 
         .task-list {
             display: grid;
+
             gap: 11px;
         }
 
         .task {
             display: grid;
             grid-template-columns: minmax(0, 1fr) auto;
+
             gap: 16px;
             align-items: center;
-            background: var(--panel-soft);
-            border-radius: 11px;
+
             padding: 14px;
+
+            border-radius: 11px;
+
+            background: var(--panel-soft);
         }
 
         .task-info {
@@ -180,29 +588,26 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            font-weight: 650;
-        }
 
-        .task-meta {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            color: var(--muted);
-            font-size: 12px;
-            margin-top: 6px;
+            font-weight: 650;
         }
 
         .badge {
             display: inline-block;
+
             padding: 4px 8px;
+
             border-radius: 999px;
+
             background: #343b49;
+
             font-size: 12px;
             font-weight: 650;
         }
 
         .badge.running,
-        .badge.waiting {
+        .badge.waiting,
+        .badge.indexing {
             color: var(--yellow);
         }
 
@@ -217,17 +622,20 @@
 
         .task-actions {
             display: flex;
-            gap: 7px;
             flex-wrap: wrap;
             justify-content: flex-end;
+
+            gap: 7px;
         }
 
-        .task-actions form {
+        .task-actions form,
+        .file-actions form {
             margin: 0;
         }
 
         .file-table {
             width: 100%;
+
             border-collapse: collapse;
             table-layout: fixed;
         }
@@ -235,7 +643,9 @@
         .file-table th,
         .file-table td {
             padding: 11px 8px;
+
             border-bottom: 1px solid var(--border);
+
             vertical-align: middle;
             text-align: left;
         }
@@ -251,6 +661,7 @@
 
         .file-size-cell {
             width: 90px;
+
             white-space: nowrap;
         }
 
@@ -260,6 +671,7 @@
 
         .file-name {
             display: block;
+
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -267,179 +679,38 @@
 
         .file-actions {
             display: flex;
-            justify-content: flex-end;
-            gap: 7px;
             flex-wrap: wrap;
-        }
+            justify-content: flex-end;
 
-        .file-actions form {
-            margin: 0;
+            gap: 7px;
         }
 
         .empty {
-            color: var(--muted);
             margin-bottom: 0;
+
+            color: var(--muted);
         }
 
-        details {
+        details.technical {
             margin-top: 18px;
         }
 
-        summary {
+        details.technical > summary {
+            color: var(--muted);
             cursor: pointer;
-            color: var(--muted);
-        }
-
-        .audio-input-grid {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(300px, .7fr);
-            gap: 14px;
-            align-items: stretch;
-        }
-
-        .input-card {
-            background: var(--panel-soft);
-            border-radius: 11px;
-            padding: 15px;
-            min-width: 0;
-        }
-
-        .input-card h3 {
-            margin: 0 0 12px;
-            font-size: 16px;
-        }
-
-        .record-controls {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 9px;
-        }
-
-        .record-button {
-            background: #b54444;
-        }
-
-        .record-button.recording {
-            animation: record-pulse 1.2s infinite;
-        }
-
-        .stop-button {
-            background: #454d5d;
-        }
-
-        .record-status {
-            color: var(--muted);
-            font-size: 13px;
-        }
-
-        .record-timer {
-            min-width: 58px;
-            font-variant-numeric: tabular-nums;
-            font-weight: 700;
-            color: var(--red);
-        }
-
-        .record-preview {
-            display: none;
-            width: 100%;
-            margin-top: 13px;
-        }
-
-        @keyframes record-pulse {
-            0%, 100% {
-                box-shadow: 0 0 0 0 rgba(239, 115, 115, .35);
-            }
-
-            50% {
-                box-shadow: 0 0 0 8px rgba(239, 115, 115, 0);
-            }
-        }
-
-        .search-form {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto auto;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .search-input {
-            width: 100%;
-            min-width: 0;
-            padding: 11px 13px;
-            border-radius: 9px;
-            border: 1px solid var(--border);
-            background: var(--panel-soft);
-            color: var(--text);
-            font: inherit;
-        }
-
-        .search-input:focus {
-            outline: 2px solid rgba(83, 125, 255, .45);
-            border-color: var(--blue);
-        }
-
-        .search-results {
-            display: grid;
-            gap: 11px;
-            margin-top: 16px;
-        }
-
-        .search-result {
-            background: var(--panel-soft);
-            border-radius: 11px;
-            padding: 15px;
-            min-width: 0;
-        }
-
-        .search-result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .search-result-source {
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-weight: 650;
-        }
-
-        .search-score {
-            flex: 0 0 auto;
-            color: var(--green);
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .search-result-text {
-            margin: 12px 0 0;
-            color: #d8dde6;
-            line-height: 1.55;
-            white-space: pre-wrap;
-            overflow-wrap: anywhere;
-        }
-
-        .search-result-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 11px;
-            color: var(--muted);
-            font-size: 12px;
         }
 
         @media (max-width: 760px) {
-            .upload-form,
-            .search-form,
             .audio-input-grid,
+            .upload-form,
+            .rag-form,
+            .search-form,
             .task {
                 grid-template-columns: 1fr;
             }
 
-            .task-actions {
+            .task-actions,
+            .file-actions {
                 justify-content: flex-start;
             }
 
@@ -448,6 +719,7 @@
             .file-table tr,
             .file-table td {
                 display: block;
+
                 width: 100%;
             }
 
@@ -457,16 +729,25 @@
 
             .file-table tr {
                 padding: 13px 0;
+
                 border-bottom: 1px solid var(--border);
             }
 
             .file-table td {
-                border: 0;
                 padding: 4px 0;
+
+                border: 0;
             }
 
-            .file-actions {
-                justify-content: flex-start;
+            .rag-source-toggle {
+                align-items: flex-start;
+            }
+
+            .rag-source-right {
+                flex-direction: column;
+                align-items: flex-end;
+
+                gap: 3px;
             }
         }
     </style>
@@ -476,17 +757,22 @@
 <main>
     <header>
         <h1>Audio Lab</h1>
+
         <p class="subtitle">
-            Транскрипція, керування результатами та індексація в Qdrant
+            Транскрипція, база знань, Qdrant і локальний RAG
         </p>
     </header>
 
     {% if success %}
-    <div class="notice success">{{ success }}</div>
+    <div class="notice success">
+        {{ success }}
+    </div>
     {% endif %}
 
     {% if error %}
-    <div class="notice error">{{ error }}</div>
+    <div class="notice error">
+        {{ error }}
+    </div>
     {% endif %}
 
     <section class="panel">
@@ -496,28 +782,66 @@
         <div class="metrics">
             <div class="metric">
                 <span>Homelab Core</span>
-                <strong class="{{ 'ok' if status.status == 'ok' else 'danger' }}">
+
+                <strong
+                    class="{{
+                        'ok'
+                        if status.status == 'ok'
+                        else 'danger'
+                    }}"
+                >
                     {{ status.status }}
                 </strong>
             </div>
 
             <div class="metric">
                 <span>Mac</span>
-                <strong class="{{ 'ok' if status.mac.online else 'danger' }}">
-                    {{ 'Online' if status.mac.online else 'Offline' }}
+
+                <strong
+                    class="{{
+                        'ok'
+                        if status.mac.online
+                        else 'danger'
+                    }}"
+                >
+                    {{
+                        'Online'
+                        if status.mac.online
+                        else 'Offline'
+                    }}
                 </strong>
             </div>
 
             <div class="metric">
                 <span>LM Studio</span>
-                <strong>
-                    {{ 'Ready' if status.llm.lm_studio else 'Offline' }}
+
+                <strong
+                    class="{{
+                        'ok'
+                        if status.llm.lm_studio
+                        else 'danger'
+                    }}"
+                >
+                    {{
+                        'Ready'
+                        if status.llm.lm_studio
+                        else 'Offline'
+                    }}
                 </strong>
             </div>
 
             <div class="metric">
                 <span>Mac Whisper</span>
-                <strong class="{% if status.whisper.mac_running %}ok{% elif active_tasks %}warning{% endif %}">
+
+                <strong
+                    class="
+                        {% if status.whisper.mac_running %}
+                            ok
+                        {% elif active_tasks %}
+                            warning
+                        {% endif %}
+                    "
+                >
                     {% if status.whisper.mac_running %}
                         Running
                     {% elif active_tasks %}
@@ -530,13 +854,25 @@
 
             <div class="metric">
                 <span>Server Whisper</span>
-                <strong class="{{ 'ok' if status.whisper.server_running else 'danger' }}">
-                    {{ 'Ready' if status.whisper.server_running else 'Offline' }}
+
+                <strong
+                    class="{{
+                        'ok'
+                        if status.whisper.server_running
+                        else 'danger'
+                    }}"
+                >
+                    {{
+                        'Ready'
+                        if status.whisper.server_running
+                        else 'Offline'
+                    }}
                 </strong>
             </div>
 
             <div class="metric">
                 <span>Queue</span>
+
                 <strong>
                     {{ status.queue.waiting }} waiting /
                     {{ status.queue.running }} running
@@ -544,7 +880,9 @@
             </div>
         </div>
         {% else %}
-        <p class="danger">Homelab Core недоступний.</p>
+        <p class="danger">
+            Homelab Core недоступний.
+        </p>
         {% endif %}
     </section>
 
@@ -575,8 +913,12 @@
                     </button>
                 </form>
 
-                <p class="muted" style="margin: 10px 0 0;">
-                    Максимальний розмір: {{ max_upload_mb }} MB.
+                <p
+                    class="muted"
+                    style="margin: 10px 0 0;"
+                >
+                    Максимальний розмір:
+                    {{ max_upload_mb }} MB.
                 </p>
             </div>
 
@@ -612,7 +954,6 @@
                 <div
                     id="record-status"
                     class="record-status"
-                    style="margin-top: 10px;"
                 >
                     Мікрофон не активний.
                 </div>
@@ -644,6 +985,66 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Запитати базу знань</h2>
+
+        <p class="muted">
+            Qdrant знайде релевантні транскрипції,
+            а Qwen сформує відповідь лише на основі джерел.
+        </p>
+
+        <form
+            id="rag-form"
+            class="rag-form"
+        >
+            <textarea
+                id="rag-query"
+                class="rag-input"
+                placeholder="Наприклад: яка погода була на вулиці і що говорили про спальню?"
+                required
+            ></textarea>
+
+            <button
+                id="rag-submit"
+                type="submit"
+            >
+                Запитати Qwen
+            </button>
+        </form>
+
+        <div
+            id="rag-loading"
+            class="rag-loading"
+        >
+            Пошук джерел і формування відповіді…
+        </div>
+
+        <div
+            id="rag-error"
+            class="rag-error"
+        ></div>
+
+        <div
+            id="rag-answer"
+            class="rag-answer"
+        >
+            <p
+                id="rag-answer-text"
+                class="rag-answer-text"
+            ></p>
+
+            <div class="task-meta">
+                <span id="rag-model"></span>
+                <span id="rag-source-count"></span>
+            </div>
+
+            <div
+                id="rag-sources"
+                class="rag-sources"
+            ></div>
         </div>
     </section>
 
@@ -685,8 +1086,12 @@
         {% endif %}
 
         {% if search_query and not search_error %}
-        <p class="muted" style="margin: 13px 0 0;">
-            Знайдено результатів: {{ search_count }}
+        <p
+            class="muted"
+            style="margin: 13px 0 0;"
+        >
+            Знайдено результатів:
+            {{ search_count }}
         </p>
 
         {% if search_results %}
@@ -696,50 +1101,72 @@
                 <div class="search-result-header">
                     <div
                         class="search-result-source"
-                        title="{{ result.source_filename or 'Без назви' }}"
+                        title="{{
+                            result.source_filename
+                            or 'Без назви'
+                        }}"
                     >
-                        {{ result.source_filename or 'Без назви' }}
+                        {{
+                            result.source_filename
+                            or 'Без назви'
+                        }}
                     </div>
 
                     <div class="search-score">
-                        {{ ((result.score or 0) * 100)|round(1) }}%
+                        {{
+                            (
+                                (result.score or 0)
+                                * 100
+                            )
+                            | round(1)
+                        }}%
                     </div>
                 </div>
 
                 <p class="search-result-text">
-                    {{ result.text or 'Текст відсутній' }}
+                    {{
+                        result.text
+                        or 'Текст відсутній'
+                    }}
                 </p>
 
                 <div class="search-result-meta">
                     <span>
-                        Chunk:
-                        {{ (result.chunk_index or 0) + 1 }}
+                        Фрагмент:
+                        {{
+                            (result.chunk_index or 0) + 1
+                        }}
                         /
-                        {{ result.chunk_count or 1 }}
+                        {{
+                            result.chunk_count or 1
+                        }}
                     </span>
 
                     <span>
                         Project:
-                        {{ result.project or '—' }}
-                    </span>
-
-                    <span title="{{ result.task_id }}">
-                        Task:
-                        {{ result.task_id or '—' }}
+                        {{
+                            result.project or '—'
+                        }}
                     </span>
                 </div>
             </article>
             {% endfor %}
         </div>
         {% else %}
-        <p class="empty" style="margin-top: 15px;">
+        <p
+            class="empty"
+            style="margin-top: 15px;"
+        >
             Нічого релевантного не знайдено.
         </p>
         {% endif %}
         {% endif %}
     </section>
 
-    <section id="tasks" class="panel">
+    <section
+        id="tasks"
+        class="panel"
+    >
         <h2>Активні задачі</h2>
 
         {% if active_tasks %}
@@ -747,34 +1174,61 @@
             {% for task in active_tasks %}
             <article class="task">
                 <div class="task-info">
-                    <div class="filename" title="{{ task.source_file or task.file_path }}">
-                        {{ task.source_file or task.file_path or 'Без назви' }}
+                    <div
+                        class="filename"
+                        title="{{
+                            task.source_file
+                            or task.file_path
+                        }}"
+                    >
+                        {{
+                            task.source_file
+                            or task.file_path
+                            or 'Без назви'
+                        }}
                     </div>
 
                     <div class="task-meta">
-                        <span class="badge {{ task.status }}">
+                        <span
+                            class="badge {{ task.status }}"
+                        >
                             {{ task.status }}
                         </span>
 
-                        <span>Спроба {{ task.attempts }}/{{ task.max_attempts }}</span>
-                        <span>Task: {{ task.id }}</span>
+                        <span>
+                            Спроба
+                            {{ task.attempts }}
+                            /
+                            {{ task.max_attempts }}
+                        </span>
+
+                        <span>
+                            Task: {{ task.id }}
+                        </span>
                     </div>
 
                     {% if task.error %}
-                    <p class="danger" style="margin: 8px 0 0;">
+                    <p
+                        class="danger"
+                        style="margin: 8px 0 0;"
+                    >
                         {{ task.error }}
                     </p>
                     {% endif %}
                 </div>
 
                 <div class="task-actions">
-                    <span class="badge running">Обробка…</span>
+                    <span class="badge running">
+                        Обробка…
+                    </span>
                 </div>
             </article>
             {% endfor %}
         </div>
         {% else %}
-        <p class="empty">Активних задач немає.</p>
+        <p class="empty">
+            Активних задач немає.
+        </p>
         {% endif %}
     </section>
 
@@ -786,12 +1240,24 @@
             {% for task in completed_tasks %}
             <article class="task">
                 <div class="task-info">
-                    <div class="filename" title="{{ task.source_file or task.file_path }}">
-                        {{ task.source_file or task.file_path or 'Без назви' }}
+                    <div
+                        class="filename"
+                        title="{{
+                            task.source_file
+                            or task.file_path
+                        }}"
+                    >
+                        {{
+                            task.source_file
+                            or task.file_path
+                            or 'Без назви'
+                        }}
                     </div>
 
                     <div class="task-meta">
-                        <span class="badge completed">completed</span>
+                        <span class="badge completed">
+                            completed
+                        </span>
 
                         {% set index_status =
                             task.index.index_status
@@ -799,19 +1265,32 @@
                             else 'not_indexed'
                         %}
 
-                        <span class="badge {{ index_status }}">
-                            Qdrant: {{ index_status }}
+                        <span
+                            class="badge {{ index_status }}"
+                        >
+                            Qdrant:
+                            {{ index_status }}
                         </span>
 
-                        {% if task.index and task.index.chunk_count %}
-                        <span>{{ task.index.chunk_count }} chunks</span>
+                        {% if
+                            task.index
+                            and task.index.chunk_count
+                        %}
+                        <span>
+                            {{ task.index.chunk_count }}
+                            chunks
+                        </span>
                         {% endif %}
-
-                        <span>Task: {{ task.id }}</span>
                     </div>
 
-                    {% if task.index and task.index.error %}
-                    <p class="danger" style="margin: 8px 0 0;">
+                    {% if
+                        task.index
+                        and task.index.error
+                    %}
+                    <p
+                        class="danger"
+                        style="margin: 8px 0 0;"
+                    >
                         {{ task.index.error }}
                     </p>
                     {% endif %}
@@ -820,12 +1299,15 @@
                 <div class="task-actions">
                     {% set output_files =
                         task.result.output_files
-                        if task.result and task.result.output_files
+                        if task.result
+                        and task.result.output_files
                         else []
                     %}
 
                     {% for output in output_files %}
-                        {% set output_name = output.split('/')[-1] %}
+                        {% set output_name =
+                            output.split('/')[-1]
+                        %}
 
                         {% if output_name.endswith('.txt') %}
                         <a
@@ -846,15 +1328,28 @@
                         {% endif %}
                     {% endfor %}
 
-                    {% if not task.index or task.index.index_status in ['not_indexed', 'failed'] %}
-                    <form method="post" action="/tasks/{{ task.id }}/index">
+                    {% if
+                        not task.index
+                        or task.index.index_status
+                        in ['not_indexed', 'failed']
+                    %}
+                    <form
+                        method="post"
+                        action="/tasks/{{ task.id }}/index"
+                    >
                         <button type="submit">
                             Додати в Qdrant
                         </button>
                     </form>
                     {% else %}
-                    <form method="post" action="/tasks/{{ task.id }}/reindex">
-                        <button class="secondary" type="submit">
+                    <form
+                        method="post"
+                        action="/tasks/{{ task.id }}/reindex"
+                    >
+                        <button
+                            class="secondary"
+                            type="submit"
+                        >
                             Переіндексувати
                         </button>
                     </form>
@@ -862,9 +1357,16 @@
                     <form
                         method="post"
                         action="/tasks/{{ task.id }}/unindex"
-                        onsubmit="return confirm('Видалити транскрипцію з Qdrant?')"
+                        onsubmit="
+                            return confirm(
+                                'Видалити транскрипцію з Qdrant?'
+                            )
+                        "
                     >
-                        <button class="danger-button" type="submit">
+                        <button
+                            class="danger-button"
+                            type="submit"
+                        >
                             Видалити з Qdrant
                         </button>
                     </form>
@@ -874,7 +1376,9 @@
             {% endfor %}
         </div>
         {% else %}
-        <p class="empty">Завершених транскрипцій немає.</p>
+        <p class="empty">
+            Завершених транскрипцій немає.
+        </p>
         {% endif %}
     </section>
 
@@ -887,16 +1391,28 @@
             <article class="task">
                 <div class="task-info">
                     <div class="filename">
-                        {{ task.source_file or task.file_path }}
+                        {{
+                            task.source_file
+                            or task.file_path
+                            or 'Без назви'
+                        }}
                     </div>
 
                     <div class="task-meta">
-                        <span class="badge failed">failed</span>
-                        <span>Task: {{ task.id }}</span>
+                        <span class="badge failed">
+                            failed
+                        </span>
+
+                        <span>
+                            Task: {{ task.id }}
+                        </span>
                     </div>
 
                     {% if task.error %}
-                    <p class="danger" style="margin: 8px 0 0;">
+                    <p
+                        class="danger"
+                        style="margin: 8px 0 0;"
+                    >
                         {{ task.error }}
                     </p>
                     {% endif %}
@@ -916,9 +1432,17 @@
         <table class="file-table">
             <thead>
                 <tr>
-                    <th class="file-name-cell">Файл</th>
-                    <th class="file-size-cell">Розмір</th>
-                    <th class="file-actions-cell">Дії</th>
+                    <th class="file-name-cell">
+                        Файл
+                    </th>
+
+                    <th class="file-size-cell">
+                        Розмір
+                    </th>
+
+                    <th class="file-actions-cell">
+                        Дії
+                    </th>
                 </tr>
             </thead>
 
@@ -926,13 +1450,24 @@
             {% for file in archive_files %}
                 <tr>
                     <td class="file-name-cell">
-                        <span class="file-name" title="{{ file.name }}">
+                        <span
+                            class="file-name"
+                            title="{{ file.name }}"
+                        >
                             {{ file.name }}
                         </span>
                     </td>
 
                     <td class="file-size-cell">
-                        {{ (file.size / 1024 / 1024)|round(2) }} MB
+                        {{
+                            (
+                                file.size
+                                / 1024
+                                / 1024
+                            )
+                            | round(2)
+                        }}
+                        MB
                     </td>
 
                     <td class="file-actions-cell">
@@ -947,9 +1482,16 @@
                             <form
                                 method="post"
                                 action="/delete/archive/{{ file.name }}"
-                                onsubmit="return confirm('Видалити аудіофайл?')"
+                                onsubmit="
+                                    return confirm(
+                                        'Видалити аудіофайл?'
+                                    )
+                                "
                             >
-                                <button class="danger-button" type="submit">
+                                <button
+                                    class="danger-button"
+                                    type="submit"
+                                >
                                     Видалити
                                 </button>
                             </form>
@@ -960,57 +1502,122 @@
             </tbody>
         </table>
         {% else %}
-        <p class="empty">Архів порожній.</p>
+        <p class="empty">
+            Архів порожній.
+        </p>
         {% endif %}
     </section>
 
-    <details class="panel">
-        <summary>Технічні папки</summary>
+    <details class="panel technical">
+        <summary>
+            Технічні папки
+        </summary>
 
-        <p style="margin-top: 15px;">
-            incoming: {{ folders.incoming|length }} ·
-            processing: {{ folders.processing|length }} ·
-            ready: {{ folders.ready|length }} ·
-            failed: {{ folders.failed|length }}
+        <p style="margin: 15px 0 0;">
+            incoming:
+            {{ folders.incoming | length }}
+            · processing:
+            {{ folders.processing | length }}
+            · ready:
+            {{ folders.ready | length }}
+            · failed:
+            {{ folders.failed | length }}
         </p>
     </details>
 </main>
 
 <script>
-    const fileInput = document.getElementById("audio-file");
-    const uploadForm = document.getElementById("upload-form");
-    const searchInput = document.querySelector(".search-input");
+    const fileInput =
+        document.getElementById("audio-file");
 
-    const recordStart = document.getElementById("record-start");
-    const recordStop = document.getElementById("record-stop");
-    const recordTimer = document.getElementById("record-timer");
-    const recordStatus = document.getElementById("record-status");
-    const recordPreview = document.getElementById("record-preview");
-    const recordActions = document.getElementById("record-actions");
-    const recordUpload = document.getElementById("record-upload");
-    const recordDelete = document.getElementById("record-delete");
+    const uploadForm =
+        document.getElementById("upload-form");
 
-    const hasActiveTasks = {{ 'true' if active_tasks else 'false' }};
+    const searchInput =
+        document.querySelector(".search-input");
+
+    const recordStart =
+        document.getElementById("record-start");
+
+    const recordStop =
+        document.getElementById("record-stop");
+
+    const recordTimer =
+        document.getElementById("record-timer");
+
+    const recordStatus =
+        document.getElementById("record-status");
+
+    const recordPreview =
+        document.getElementById("record-preview");
+
+    const recordActions =
+        document.getElementById("record-actions");
+
+    const recordUpload =
+        document.getElementById("record-upload");
+
+    const recordDelete =
+        document.getElementById("record-delete");
+
+    const ragForm =
+        document.getElementById("rag-form");
+
+    const ragQuery =
+        document.getElementById("rag-query");
+
+    const ragSubmit =
+        document.getElementById("rag-submit");
+
+    const ragLoading =
+        document.getElementById("rag-loading");
+
+    const ragError =
+        document.getElementById("rag-error");
+
+    const ragAnswer =
+        document.getElementById("rag-answer");
+
+    const ragAnswerText =
+        document.getElementById("rag-answer-text");
+
+    const ragModel =
+        document.getElementById("rag-model");
+
+    const ragSourceCount =
+        document.getElementById("rag-source-count");
+
+    const ragSources =
+        document.getElementById("rag-sources");
+
+    const hasActiveTasks =
+        {{ 'true' if active_tasks else 'false' }};
 
     let mediaRecorder = null;
     let mediaStream = null;
     let recordedChunks = [];
+
     let recordedBlob = null;
     let recordedMimeType = "";
     let recordedObjectUrl = null;
+
     let recordingStartedAt = null;
     let timerHandle = null;
+
     let recordingActive = false;
     let uploadInProgress = false;
+    let ragInProgress = false;
 
     function formatDuration(totalSeconds) {
-        const minutes = Math.floor(totalSeconds / 60)
-            .toString()
-            .padStart(2, "0");
+        const minutes =
+            Math.floor(totalSeconds / 60)
+                .toString()
+                .padStart(2, "0");
 
-        const seconds = Math.floor(totalSeconds % 60)
-            .toString()
-            .padStart(2, "0");
+        const seconds =
+            Math.floor(totalSeconds % 60)
+                .toString()
+                .padStart(2, "0");
 
         return `${minutes}:${seconds}`;
     }
@@ -1022,10 +1629,12 @@
         }
 
         const elapsed = Math.floor(
-            (Date.now() - recordingStartedAt) / 1000
+            (Date.now() - recordingStartedAt)
+            / 1000
         );
 
-        recordTimer.textContent = formatDuration(elapsed);
+        recordTimer.textContent =
+            formatDuration(elapsed);
     }
 
     function chooseRecordingMimeType() {
@@ -1037,8 +1646,8 @@
 
         for (const mimeType of candidates) {
             if (
-                window.MediaRecorder &&
-                MediaRecorder.isTypeSupported(mimeType)
+                window.MediaRecorder
+                && MediaRecorder.isTypeSupported(mimeType)
             ) {
                 return mimeType;
             }
@@ -1059,27 +1668,64 @@
         return "webm";
     }
 
-    async function uploadRecording(blob, mimeType) {
+    function resetRecordedDraft() {
+        if (recordedObjectUrl) {
+            URL.revokeObjectURL(recordedObjectUrl);
+        }
+
+        recordedBlob = null;
+        recordedMimeType = "";
+        recordedObjectUrl = null;
+        recordedChunks = [];
+
+        recordPreview.pause();
+        recordPreview.removeAttribute("src");
+        recordPreview.load();
+        recordPreview.style.display = "none";
+
+        recordActions.style.display = "none";
+
+        recordStart.disabled = false;
+        recordStop.disabled = true;
+        recordUpload.disabled = false;
+        recordDelete.disabled = false;
+
+        recordTimer.textContent = "00:00";
+    }
+
+    async function uploadRecording(
+        blob,
+        mimeType
+    ) {
         uploadInProgress = true;
-        recordStatus.textContent = "Завантаження запису на сервер…";
 
-        const now = new Date();
-        const timestamp = now
-            .toISOString()
-            .replaceAll(":", "-")
-            .replaceAll(".", "-");
+        recordStatus.textContent =
+            "Завантаження запису на сервер…";
 
-        const extension = extensionForMimeType(mimeType);
-        const filename = `recording-${timestamp}.${extension}`;
+        const timestamp =
+            new Date()
+                .toISOString()
+                .replaceAll(":", "-")
+                .replaceAll(".", "-");
+
+        const extension =
+            extensionForMimeType(mimeType);
+
+        const filename =
+            `recording-${timestamp}.${extension}`;
 
         const formData = new FormData();
+
         formData.append(
             "file",
             new File(
                 [blob],
                 filename,
                 {
-                    type: mimeType || blob.type,
+                    type:
+                        mimeType
+                        || blob.type
+                        || "audio/webm",
                 }
             )
         );
@@ -1094,9 +1740,12 @@
             );
 
             if (!response.ok) {
-                const message = await response.text();
+                const message =
+                    await response.text();
+
                 throw new Error(
-                    message || `HTTP ${response.status}`
+                    message
+                    || `HTTP ${response.status}`
                 );
             }
 
@@ -1110,64 +1759,62 @@
                         "Запис із мікрофона додано в чергу."
                     )
                     + "#tasks";
-            }, 700);
+            }, 500);
 
         } catch (error) {
             uploadInProgress = false;
+
             recordStatus.textContent =
-                `Не вдалося завантажити запис: ${error.message}`;
+                "Не вдалося завантажити запис: "
+                + error.message;
 
             recordStart.disabled = false;
+            recordUpload.disabled = false;
+            recordDelete.disabled = false;
         }
     }
 
     async function startRecording() {
-        if (recordedObjectUrl) {
-            URL.revokeObjectURL(recordedObjectUrl);
-        }
-
-        recordedBlob = null;
-        recordedMimeType = "";
-        recordedObjectUrl = null;
-        recordedChunks = [];
-
-        recordPreview.removeAttribute("src");
-        recordPreview.load();
-        recordPreview.style.display = "none";
-        recordActions.style.display = "none";
+        resetRecordedDraft();
 
         if (!window.isSecureContext) {
             recordStatus.textContent =
-                "Запис із мікрофона потребує HTTPS. "
-                + "Відкрийте Audio Lab через захищену адресу.";
+                "Запис із мікрофона потребує HTTPS.";
+
             return;
         }
 
         if (
-            !navigator.mediaDevices ||
-            !navigator.mediaDevices.getUserMedia
+            !navigator.mediaDevices
+            || !navigator.mediaDevices.getUserMedia
         ) {
             recordStatus.textContent =
                 "Браузер не надає доступу до мікрофона.";
+
             return;
         }
 
         if (!window.MediaRecorder) {
             recordStatus.textContent =
-                "Браузер не підтримує запис MediaRecorder.";
+                "Браузер не підтримує MediaRecorder.";
+
             return;
         }
 
         try {
-            mediaStream = await navigator.mediaDevices.getUserMedia({
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true,
-                },
-            });
+            mediaStream =
+                await navigator.mediaDevices.getUserMedia(
+                    {
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true,
+                        },
+                    }
+                );
 
-            const mimeType = chooseRecordingMimeType();
+            const mimeType =
+                chooseRecordingMimeType();
 
             mediaRecorder = mimeType
                 ? new MediaRecorder(
@@ -1181,8 +1828,13 @@
             mediaRecorder.addEventListener(
                 "dataavailable",
                 (event) => {
-                    if (event.data && event.data.size > 0) {
-                        recordedChunks.push(event.data);
+                    if (
+                        event.data
+                        && event.data.size > 0
+                    ) {
+                        recordedChunks.push(
+                            event.data
+                        );
                     }
                 }
             );
@@ -1191,9 +1843,9 @@
                 "stop",
                 () => {
                     const actualMimeType =
-                        mediaRecorder.mimeType ||
-                        mimeType ||
-                        "audio/webm";
+                        mediaRecorder.mimeType
+                        || mimeType
+                        || "audio/webm";
 
                     const blob = new Blob(
                         recordedChunks,
@@ -1208,20 +1860,25 @@
 
                         recordStart.disabled = false;
                         recordStop.disabled = true;
+
                         return;
                     }
 
-                    if (recordedObjectUrl) {
-                        URL.revokeObjectURL(recordedObjectUrl);
-                    }
-
                     recordedBlob = blob;
-                    recordedMimeType = actualMimeType;
-                    recordedObjectUrl = URL.createObjectURL(blob);
+                    recordedMimeType =
+                        actualMimeType;
 
-                    recordPreview.src = recordedObjectUrl;
-                    recordPreview.style.display = "block";
-                    recordActions.style.display = "flex";
+                    recordedObjectUrl =
+                        URL.createObjectURL(blob);
+
+                    recordPreview.src =
+                        recordedObjectUrl;
+
+                    recordPreview.style.display =
+                        "block";
+
+                    recordActions.style.display =
+                        "flex";
 
                     recordStart.disabled = false;
                     recordStop.disabled = true;
@@ -1229,8 +1886,10 @@
                     recordDelete.disabled = false;
 
                     recordStatus.textContent =
-                        "Запис готовий. Прослухайте його, "
-                        + "а потім додайте в чергу або видаліть.";
+                        "Запис готовий. "
+                        + "Прослухайте його, "
+                        + "потім додайте в чергу "
+                        + "або видаліть.";
                 }
             );
 
@@ -1239,15 +1898,21 @@
             recordingActive = true;
             recordingStartedAt = Date.now();
 
-            timerHandle = window.setInterval(
-                updateTimer,
-                250
-            );
+            timerHandle =
+                window.setInterval(
+                    updateTimer,
+                    250
+                );
 
             recordStart.disabled = true;
             recordStop.disabled = false;
-            recordStart.classList.add("recording");
-            recordStatus.textContent = "Йде запис…";
+
+            recordStart.classList.add(
+                "recording"
+            );
+
+            recordStatus.textContent =
+                "Йде запис…";
 
         } catch (error) {
             recordStatus.textContent =
@@ -1258,8 +1923,8 @@
 
     function stopRecording() {
         if (
-            !mediaRecorder ||
-            mediaRecorder.state === "inactive"
+            !mediaRecorder
+            || mediaRecorder.state === "inactive"
         ) {
             return;
         }
@@ -1267,7 +1932,10 @@
         mediaRecorder.stop();
 
         if (mediaStream) {
-            for (const track of mediaStream.getTracks()) {
+            for (
+                const track
+                of mediaStream.getTracks()
+            ) {
                 track.stop();
             }
         }
@@ -1279,9 +1947,14 @@
         updateTimer();
 
         recordStop.disabled = true;
-        recordStart.classList.remove("recording");
+
+        recordStart.classList.remove(
+            "recording"
+        );
+
         recordStatus.textContent =
-            "Запис завершено. Підготовка прослуховування…";
+            "Запис завершено. "
+            + "Підготовка прослуховування…";
     }
 
     recordStart.addEventListener(
@@ -1299,7 +1972,8 @@
         async () => {
             if (!recordedBlob) {
                 recordStatus.textContent =
-                    "Немає готового запису для завантаження.";
+                    "Немає готового запису.";
+
                 return;
             }
 
@@ -1309,7 +1983,9 @@
 
             await uploadRecording(
                 recordedBlob,
-                recordedMimeType || recordedBlob.type || "audio/webm"
+                recordedMimeType
+                || recordedBlob.type
+                || "audio/webm"
             );
         }
     );
@@ -1317,29 +1993,11 @@
     recordDelete.addEventListener(
         "click",
         () => {
-            if (recordedObjectUrl) {
-                URL.revokeObjectURL(recordedObjectUrl);
-            }
+            resetRecordedDraft();
 
-            recordedBlob = null;
-            recordedMimeType = "";
-            recordedObjectUrl = null;
-            recordedChunks = [];
-
-            recordPreview.pause();
-            recordPreview.removeAttribute("src");
-            recordPreview.load();
-            recordPreview.style.display = "none";
-            recordActions.style.display = "none";
-
-            recordStart.disabled = false;
-            recordStop.disabled = true;
-            recordUpload.disabled = false;
-            recordDelete.disabled = false;
-
-            recordTimer.textContent = "00:00";
             recordStatus.textContent =
-                "Запис видалено. Можна зробити новий.";
+                "Запис видалено. "
+                + "Можна зробити новий.";
         }
     );
 
@@ -1350,45 +2008,363 @@
         }
     );
 
-    /*
-     * Refresh only while tasks are active.
-     * Never refresh while the user is typing, recording,
-     * selecting a file or uploading.
-     */
-    window.setInterval(() => {
-        const fileSelected =
-            fileInput &&
-            fileInput.files &&
-            fileInput.files.length > 0;
+    function clearRagResults() {
+        ragError.style.display = "none";
+        ragError.textContent = "";
 
-        const searchIsActive =
-            searchInput &&
-            (
-                document.activeElement === searchInput ||
-                searchInput.value.trim().length > 0
+        ragAnswer.style.display = "none";
+
+        ragAnswerText.textContent = "";
+        ragModel.textContent = "";
+        ragSourceCount.textContent = "";
+
+        ragSources.replaceChildren();
+    }
+
+    function createSourceElement(source) {
+        const container =
+            document.createElement("div");
+
+        container.className = "rag-source";
+
+        const header =
+            document.createElement("button");
+
+        header.type = "button";
+        header.className =
+            "rag-source-toggle";
+
+        header.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+
+        const name =
+            document.createElement("span");
+
+        name.className =
+            "rag-source-name";
+
+        const sourceNumber =
+            source.number !== undefined
+                ? source.number
+                : "?";
+
+        name.textContent =
+            `[Джерело ${sourceNumber}] `
+            + (
+                source.source_filename
+                || "Без назви"
             );
 
-        const formIsActive =
-            document.activeElement &&
-            (
-                document.activeElement.tagName === "INPUT" ||
-                document.activeElement.tagName === "TEXTAREA"
+        name.title =
+            source.source_filename
+            || "";
+
+        const rightSide =
+            document.createElement("span");
+
+        rightSide.className =
+            "rag-source-right";
+
+        const score =
+            document.createElement("span");
+
+        score.className =
+            "rag-source-score";
+
+        const numericScore =
+            Number(source.score || 0);
+
+        score.textContent =
+            `${(numericScore * 100).toFixed(1)}%`;
+
+        const arrow =
+            document.createElement("span");
+
+        arrow.className =
+            "rag-source-arrow";
+
+        arrow.textContent =
+            "Показати джерело ▾";
+
+        rightSide.append(
+            score,
+            arrow
+        );
+
+        header.append(
+            name,
+            rightSide
+        );
+
+        const body =
+            document.createElement("div");
+
+        body.className =
+            "rag-source-body";
+
+        const sourceText =
+            document.createElement("p");
+
+        sourceText.className =
+            "rag-source-text";
+
+        sourceText.textContent =
+            source.text
+            || "Текст джерела відсутній.";
+
+        const metadata =
+            document.createElement("div");
+
+        metadata.className =
+            "task-meta";
+
+        const chunk =
+            document.createElement("span");
+
+        chunk.textContent =
+            "Фрагмент "
+            + (
+                (
+                    Number(
+                        source.chunk_index
+                    )
+                    || 0
+                )
+                + 1
+            )
+            + " / "
+            + (
+                Number(
+                    source.chunk_count
+                )
+                || 1
             );
 
-        const canRefresh =
-            hasActiveTasks &&
-            !document.hidden &&
-            !fileSelected &&
-            !searchIsActive &&
-            !formIsActive &&
-            !recordingActive &&
-            !recordedBlob &&
-            !uploadInProgress;
+        const type =
+            document.createElement("span");
 
-        if (canRefresh) {
-            window.location.reload();
+        type.textContent =
+            "Тип: "
+            + (
+                source.source_type
+                || "—"
+            );
+
+        metadata.append(
+            chunk,
+            type
+        );
+
+        body.append(
+            sourceText,
+            metadata
+        );
+
+        header.addEventListener(
+            "click",
+            () => {
+                const opening =
+                    !body.classList.contains(
+                        "open"
+                    );
+
+                body.classList.toggle(
+                    "open",
+                    opening
+                );
+
+                header.setAttribute(
+                    "aria-expanded",
+                    opening
+                        ? "true"
+                        : "false"
+                );
+
+                arrow.textContent =
+                    opening
+                        ? "Сховати джерело ▴"
+                        : "Показати джерело ▾";
+            }
+        );
+
+        container.append(
+            header,
+            body
+        );
+
+        return container;
+    }
+
+    ragForm.addEventListener(
+        "submit",
+        async (event) => {
+            event.preventDefault();
+
+            const query =
+                ragQuery.value.trim();
+
+            if (!query) {
+                return;
+            }
+
+            clearRagResults();
+
+            ragInProgress = true;
+
+            ragSubmit.disabled = true;
+            ragQuery.disabled = true;
+
+            ragLoading.style.display =
+                "block";
+
+            try {
+                const response = await fetch(
+                    "/api/knowledge/chat",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+                        },
+
+                        body: JSON.stringify({
+                            query,
+                            limit: 5,
+                            temperature: 0.1,
+                        }),
+                    }
+                );
+
+                let payload = {};
+
+                try {
+                    payload =
+                        await response.json();
+                } catch {
+                    payload = {};
+                }
+
+                if (!response.ok) {
+                    throw new Error(
+                        payload.detail
+                        || `HTTP ${response.status}`
+                    );
+                }
+
+                ragAnswerText.textContent =
+                    payload.answer
+                    || "Відповідь порожня.";
+
+                ragModel.textContent =
+                    "Модель: "
+                    + (
+                        payload.model
+                        || "qwen-general"
+                    );
+
+                const sources =
+                    Array.isArray(
+                        payload.sources
+                    )
+                        ? payload.sources
+                        : [];
+
+                ragSourceCount.textContent =
+                    `Джерел: ${sources.length}`;
+
+                for (const source of sources) {
+                    const sourceElement =
+                        createSourceElement(
+                            source
+                        );
+
+                    ragSources.appendChild(
+                        sourceElement
+                    );
+                }
+
+                ragAnswer.style.display =
+                    "block";
+
+            } catch (error) {
+                ragError.textContent =
+                    "Не вдалося отримати відповідь: "
+                    + error.message;
+
+                ragError.style.display =
+                    "block";
+
+            } finally {
+                ragInProgress = false;
+
+                ragLoading.style.display =
+                    "none";
+
+                ragSubmit.disabled = false;
+                ragQuery.disabled = false;
+
+                ragQuery.focus();
+            }
         }
-    }, 5000);
+    );
+
+    window.setInterval(
+        () => {
+            const fileSelected =
+                fileInput
+                && fileInput.files
+                && fileInput.files.length > 0;
+
+            const searchIsActive =
+                searchInput
+                && (
+                    document.activeElement
+                    === searchInput
+                    || searchInput.value
+                        .trim()
+                        .length > 0
+                );
+
+            const ragIsActive =
+                ragQuery
+                && (
+                    document.activeElement
+                    === ragQuery
+                    || ragQuery.value
+                        .trim()
+                        .length > 0
+                );
+
+            const formIsActive =
+                document.activeElement
+                && (
+                    document.activeElement
+                        .tagName === "INPUT"
+                    || document.activeElement
+                        .tagName === "TEXTAREA"
+                );
+
+            const canRefresh =
+                hasActiveTasks
+                && !document.hidden
+                && !fileSelected
+                && !searchIsActive
+                && !ragIsActive
+                && !formIsActive
+                && !recordingActive
+                && !recordedBlob
+                && !uploadInProgress
+                && !ragInProgress;
+
+            if (canRefresh) {
+                window.location.reload();
+            }
+        },
+        5000
+    );
 </script>
 </body>
 </html>

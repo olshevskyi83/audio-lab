@@ -10,6 +10,7 @@ import httpx
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from pydantic import BaseModel, Field
 
 
 AUDIO_ROOT = Path(
@@ -60,6 +61,13 @@ FOLDERS = (
     "failed",
     "archive",
 )
+
+
+
+class KnowledgeChatRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=4000)
+    limit: int = Field(default=5, ge=1, le=10)
+    temperature: float = Field(default=0.1, ge=0.0, le=2.0)
 
 
 app = FastAPI(
@@ -792,6 +800,64 @@ async def unindex_task(
         ),
         status_code=303,
     )
+
+
+@app.post("/api/knowledge/chat")
+async def knowledge_chat(
+    request: KnowledgeChatRequest,
+) -> dict[str, Any]:
+    try:
+        async with httpx.AsyncClient(
+            timeout=1800.0
+        ) as client:
+            response = await client.post(
+                f"{CORE_URL}/knowledge/chat",
+                json={
+                    "query": request.query,
+                    "model": "qwen-general",
+                    "limit": request.limit,
+                    "source_type": "transcription",
+                    "project": "audio-lab",
+                    "temperature": request.temperature,
+                },
+            )
+
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail="Homelab Core returned invalid JSON",
+            ) from exc
+
+        if response.status_code >= 400:
+            detail = (
+                payload.get("detail")
+                if isinstance(payload, dict)
+                else None
+            )
+
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=detail or "RAG request failed",
+            )
+
+        if not isinstance(payload, dict):
+            raise HTTPException(
+                status_code=502,
+                detail="Invalid RAG response",
+            )
+
+        return payload
+
+    except HTTPException:
+        raise
+
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Homelab Core недоступний: {exc}",
+        ) from exc
 
 
 @app.get("/health")
