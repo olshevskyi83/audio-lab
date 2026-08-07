@@ -1,41 +1,51 @@
 import AVFoundation
 import CoreMedia
 import Foundation
-import ScreenCaptureKit
+@preconcurrency import ScreenCaptureKit
 
-enum SystemAudioCaptureError: Error {
+enum SystemAudioCaptureError: Error, Sendable {
     case noDisplay
     case streamFailed(String)
 }
 
-final class SystemAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
-    private let onSamples: ([Float], Double) -> Void
+/// System-audio-only capture via ScreenCaptureKit.
+///
+/// `@unchecked Sendable` because:
+/// - `stream` is mutated only from `start`/`stop` (serialized by `SessionController`'s lock)
+/// - sample callbacks run on `outputQueue` and only invoke the `@Sendable` `onSamples` sink
+/// - ScreenCaptureKit ObjC types are imported `@preconcurrency` (not fully Sendable-annotated)
+final class SystemAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sendable {
+    private let onSamples: @Sendable ([Float], Double) -> Void
     private var stream: SCStream?
     private let outputQueue = DispatchQueue(label: "mac.capture.agent.audio")
 
-    init(onSamples: @escaping ([Float], Double) -> Void) {
+    init(onSamples: @escaping @Sendable ([Float], Double) -> Void) {
         self.onSamples = onSamples
     }
 
     func start() throws {
-        let semaphore = DispatchSemaphore(value: 0)
-        var startError: Error?
-        var content: SCShareableContent?
+        try AsyncBridge.runThrowing(timeoutSeconds: 20) { [self] in
+            try await self.startAsync()
+        }
+    }
 
-        SCShareableContent.getExcludingDesktopWindows(false, onScreenWindowsOnly: true) { result, error in
-            if let error {
-                startError = error
-            } else {
-                content = result
+    func stop() {
+        do {
+            try AsyncBridge.runThrowing(timeoutSeconds: 10) { [self] in
+                await self.stopAsync()
             }
-            semaphore.signal()
+        } catch {
+            NSLog("SystemAudioCapture stop failed: \(error.localizedDescription)")
+            stream = nil
         }
+    }
 
-        _ = semaphore.wait(timeout: .now() + 10)
-        if let startError {
-            throw startError
-        }
-        guard let display = content?.displays.first else {
+    private func startAsync() async throws {
+        let content = try await SCShareableContent.excludingDesktopWindows(
+            false,
+            onScreenWindowsOnly: true
+        )
+        guard let display = content.displays.first else {
             throw SystemAudioCaptureError.noDisplay
         }
 
@@ -58,27 +68,17 @@ final class SystemAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
         try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: outputQueue)
         // Intentionally do not add .screen output.
 
-        let startSemaphore = DispatchSemaphore(value: 0)
-        var streamError: Error?
-        stream.startCapture { error in
-            streamError = error
-            startSemaphore.signal()
-        }
-        _ = startSemaphore.wait(timeout: .now() + 10)
-        if let streamError {
-            throw streamError
-        }
-
+        try await stream.startCapture()
         self.stream = stream
     }
 
-    func stop() {
+    private func stopAsync() async {
         guard let stream else { return }
-        let semaphore = DispatchSemaphore(value: 0)
-        stream.stopCapture { _ in
-            semaphore.signal()
+        do {
+            try await stream.stopCapture()
+        } catch {
+            NSLog("SystemAudioCapture stopCapture error: \(error.localizedDescription)")
         }
-        _ = semaphore.wait(timeout: .now() + 5)
         self.stream = nil
     }
 
@@ -103,7 +103,9 @@ final class SystemAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
 
     private static func floatSamples(from sampleBuffer: CMSampleBuffer) -> [Float]? {
         guard let formatDescription = sampleBuffer.formatDescription else { return nil }
-        guard let asbdPointer = CMAudioFormatDescriptionGetStreamBasicDescription(formatDescription) else {
+        guard let asbdPointer = CMAudioFormatDescriptionGetStreamBasicDescription(
+            formatDescription
+        ) else {
             return nil
         }
         let asbd = asbdPointer.pointee
@@ -123,14 +125,20 @@ final class SystemAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
 
         if asbd.mFormatFlags & kAudioFormatFlagIsFloat != 0 {
             let floatCount = length / MemoryLayout<Float>.size
-            let buffer = UnsafeRawPointer(dataPointer).bindMemory(to: Float.self, capacity: floatCount)
+            let buffer = UnsafeRawPointer(dataPointer).bindMemory(
+                to: Float.self,
+                capacity: floatCount
+            )
             let all = Array(UnsafeBufferPointer(start: buffer, count: floatCount))
             return downmix(all, channels: channels)
         }
 
         // Prefer 16-bit PCM fallback.
         let intCount = length / MemoryLayout<Int16>.size
-        let buffer = UnsafeRawPointer(dataPointer).bindMemory(to: Int16.self, capacity: intCount)
+        let buffer = UnsafeRawPointer(dataPointer).bindMemory(
+            to: Int16.self,
+            capacity: intCount
+        )
         let ints = Array(UnsafeBufferPointer(start: buffer, count: intCount))
         let floats = ints.map { Float($0) / Float(Int16.max) }
         return downmix(floats, channels: channels)

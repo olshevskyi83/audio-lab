@@ -102,6 +102,14 @@ ScreenCaptureKit itself only runs on macOS hardware with permission granted. The
 
 System audio capture uses ScreenCaptureKit APIs available through the macOS SDK bundled with Command Line Tools (`SCStream`, `capturesAudio`, etc.). Optional `captureMicrophone = false` is gated with `#available(macOS 15.0, *)` and is not required for system-audio-only capture. If a future API ever requires the full Xcode SDK, that will be called out explicitly — current code is intended for CLI tools only.
 
+## Swift 6 concurrency
+
+- `AgentHTTPServer` serializes Network callbacks on one `DispatchQueue` and is `@unchecked Sendable` for that reason
+- `SessionController` guards all mutable session state with `NSLock` (`@unchecked Sendable`)
+- ScreenCaptureKit is imported with `@preconcurrency` (ObjC types lack full Sendable annotations)
+- Capture start/stop uses async ScreenCaptureKit APIs bridged via a locked result box (no mutable locals in `@Sendable` completions)
+- Chunk upload uses `URLSession.shared.data(for:)` async API
+
 ## Notes
 
 - Whole system output mix for MVP (no Zoom-only filter yet)

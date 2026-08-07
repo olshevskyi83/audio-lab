@@ -1,8 +1,14 @@
 import Foundation
-import Network
+@preconcurrency import Network
 import CaptureAgentCore
 
-final class AgentHTTPServer {
+/// HTTP front-end for the capture agent.
+///
+/// Marked `@unchecked Sendable` because all request handling and Network.framework
+/// callbacks are funneled onto `queue`. Immutable after `init` except for the
+/// listener lifecycle, which is also started/observed only on `queue`.
+/// `SessionController` is independently lock-serialized.
+final class AgentHTTPServer: @unchecked Sendable {
     private let listener: NWListener
     private let controller: SessionController
     private let token: String
@@ -12,12 +18,18 @@ final class AgentHTTPServer {
         self.controller = controller
         self.token = config.token
         let parameters = NWParameters.tcp
-        listener = try NWListener(using: parameters, on: NWEndpoint.Port(rawValue: UInt16(config.port))!)
+        listener = try NWListener(
+            using: parameters,
+            on: NWEndpoint.Port(rawValue: UInt16(config.port))!
+        )
     }
 
     func start() {
         listener.newConnectionHandler = { [weak self] connection in
-            self?.handle(connection)
+            guard let self else { return }
+            self.queue.async {
+                self.handle(connection)
+            }
         }
         listener.stateUpdateHandler = { state in
             if case .failed(let error) = state {
@@ -34,65 +46,93 @@ final class AgentHTTPServer {
     }
 
     private func receive(on connection: NWConnection, buffer: Data) {
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) {
+            [weak self] data, _, isComplete, error in
             guard let self else { return }
-            if let error {
-                NSLog("Connection error: \(error)")
-                connection.cancel()
+            self.queue.async {
+                self.handleReceive(
+                    connection: connection,
+                    buffer: buffer,
+                    data: data,
+                    isComplete: isComplete,
+                    error: error
+                )
+            }
+        }
+    }
+
+    private func handleReceive(
+        connection: NWConnection,
+        buffer: Data,
+        data: Data?,
+        isComplete: Bool,
+        error: Error?
+    ) {
+        if let error {
+            NSLog("Connection error: \(error)")
+            connection.cancel()
+            return
+        }
+
+        var next = buffer
+        if let data {
+            next.append(data)
+        }
+
+        if let headerEnd = next.range(of: Data("\r\n\r\n".utf8)) {
+            let headerData = next.subdata(in: next.startIndex..<headerEnd.lowerBound)
+            let headerText = String(data: headerData, encoding: .utf8) ?? ""
+            let lines = headerText.components(separatedBy: "\r\n")
+            guard let requestLine = lines.first else {
+                respond(connection, status: 400, body: #"{"detail":"Bad request"}"#)
+                return
+            }
+            let parts = requestLine.split(separator: " ")
+            guard parts.count >= 2 else {
+                respond(connection, status: 400, body: #"{"detail":"Bad request"}"#)
+                return
+            }
+            let method = String(parts[0])
+            let path = String(parts[1])
+
+            var headers: [String: String] = [:]
+            for line in lines.dropFirst() {
+                if let separator = line.firstIndex(of: ":") {
+                    let key = String(line[..<separator])
+                        .trimmingCharacters(in: .whitespaces)
+                        .lowercased()
+                    let value = String(line[line.index(after: separator)...])
+                        .trimmingCharacters(in: .whitespaces)
+                    headers[key] = value
+                }
+            }
+
+            let contentLength = Int(headers["content-length"] ?? "0") ?? 0
+            let bodyStart = headerEnd.upperBound
+            let availableBody = next.count - bodyStart
+            if availableBody < contentLength {
+                receive(on: connection, buffer: next)
                 return
             }
 
-            var next = buffer
-            if let data {
-                next.append(data)
-            }
+            let body = contentLength > 0
+                ? next.subdata(in: bodyStart..<(bodyStart + contentLength))
+                : Data()
 
-            if let headerEnd = next.range(of: Data("\r\n\r\n".utf8)) {
-                let headerData = next.subdata(in: next.startIndex..<headerEnd.lowerBound)
-                let headerText = String(data: headerData, encoding: .utf8) ?? ""
-                let lines = headerText.components(separatedBy: "\r\n")
-                guard let requestLine = lines.first else {
-                    self.respond(connection, status: 400, body: #"{"detail":"Bad request"}"#)
-                    return
-                }
-                let parts = requestLine.split(separator: " ")
-                guard parts.count >= 2 else {
-                    self.respond(connection, status: 400, body: #"{"detail":"Bad request"}"#)
-                    return
-                }
-                let method = String(parts[0])
-                let path = String(parts[1])
+            dispatch(
+                method: method,
+                path: path,
+                headers: headers,
+                body: body,
+                connection: connection
+            )
+            return
+        }
 
-                var headers: [String: String] = [:]
-                for line in lines.dropFirst() {
-                    if let separator = line.firstIndex(of: ":") {
-                        let key = String(line[..<separator]).trimmingCharacters(in: .whitespaces).lowercased()
-                        let value = String(line[line.index(after: separator)...]).trimmingCharacters(in: .whitespaces)
-                        headers[key] = value
-                    }
-                }
-
-                let contentLength = Int(headers["content-length"] ?? "0") ?? 0
-                let bodyStart = headerEnd.upperBound
-                let availableBody = next.count - bodyStart
-                if availableBody < contentLength {
-                    self.receive(on: connection, buffer: next)
-                    return
-                }
-
-                let body = contentLength > 0
-                    ? next.subdata(in: bodyStart..<(bodyStart + contentLength))
-                    : Data()
-
-                self.dispatch(method: method, path: path, headers: headers, body: body, connection: connection)
-                return
-            }
-
-            if isComplete {
-                connection.cancel()
-            } else {
-                self.receive(on: connection, buffer: next)
-            }
+        if isComplete {
+            connection.cancel()
+        } else {
+            receive(on: connection, buffer: next)
         }
     }
 
@@ -113,7 +153,11 @@ final class AgentHTTPServer {
         do {
             switch (method, path) {
             case ("GET", "/health"):
-                respond(connection, status: 200, body: #"{"status":"ok","service":"mac-capture-agent"}"#)
+                respond(
+                    connection,
+                    status: 200,
+                    body: #"{"status":"ok","service":"mac-capture-agent"}"#
+                )
 
             case ("GET", "/status"):
                 let payload = controller.statusPayload()
@@ -124,22 +168,26 @@ final class AgentHTTPServer {
                 try controller.start(request: request)
                 respond(connection, status: 200, json: controller.statusPayload())
 
-            case ("POST", let pausePath) where pausePath.hasPrefix("/sessions/") && pausePath.hasSuffix("/pause"):
+            case ("POST", let pausePath)
+                where pausePath.hasPrefix("/sessions/") && pausePath.hasSuffix("/pause"):
                 let sessionId = extractSessionId(from: pausePath)
                 try controller.pause(sessionId: sessionId)
                 respond(connection, status: 200, json: controller.statusPayload())
 
-            case ("POST", let resumePath) where resumePath.hasPrefix("/sessions/") && resumePath.hasSuffix("/resume"):
+            case ("POST", let resumePath)
+                where resumePath.hasPrefix("/sessions/") && resumePath.hasSuffix("/resume"):
                 let sessionId = extractSessionId(from: resumePath)
                 try controller.resume(sessionId: sessionId)
                 respond(connection, status: 200, json: controller.statusPayload())
 
-            case ("POST", let stopPath) where stopPath.hasPrefix("/sessions/") && stopPath.hasSuffix("/stop"):
+            case ("POST", let stopPath)
+                where stopPath.hasPrefix("/sessions/") && stopPath.hasSuffix("/stop"):
                 let sessionId = extractSessionId(from: stopPath)
                 try controller.stop(sessionId: sessionId)
                 respond(connection, status: 200, json: ["state": "idle"])
 
-            case ("POST", let cancelPath) where cancelPath.hasPrefix("/sessions/") && cancelPath.hasSuffix("/cancel"):
+            case ("POST", let cancelPath)
+                where cancelPath.hasPrefix("/sessions/") && cancelPath.hasSuffix("/cancel"):
                 let sessionId = extractSessionId(from: cancelPath)
                 try controller.cancel(sessionId: sessionId)
                 respond(connection, status: 200, json: ["state": "cancelled"])
@@ -151,7 +199,8 @@ final class AgentHTTPServer {
             let escaped = error.detail.replacingOccurrences(of: "\"", with: "\\\"")
             respond(connection, status: error.status, body: "{\"detail\":\"\(escaped)\"}")
         } catch {
-            let escaped = error.localizedDescription.replacingOccurrences(of: "\"", with: "\\\"")
+            let escaped = error.localizedDescription
+                .replacingOccurrences(of: "\"", with: "\\\"")
             respond(connection, status: 500, body: "{\"detail\":\"\(escaped)\"}")
         }
     }
@@ -160,8 +209,10 @@ final class AgentHTTPServer {
         if token.isEmpty {
             return true
         }
-        if let bearer = headers["authorization"], bearer.lowercased().hasPrefix("bearer ") {
-            let value = String(bearer.dropFirst(7)).trimmingCharacters(in: .whitespaces)
+        if let bearer = headers["authorization"],
+           bearer.lowercased().hasPrefix("bearer ") {
+            let value = String(bearer.dropFirst(7))
+                .trimmingCharacters(in: .whitespaces)
             if value == token {
                 return true
             }
@@ -205,7 +256,8 @@ final class AgentHTTPServer {
     }
 
     private func respond(_ connection: NWConnection, status: Int, json: [String: Any]) {
-        let data = (try? JSONSerialization.data(withJSONObject: json, options: [])) ?? Data("{}".utf8)
+        let data = (try? JSONSerialization.data(withJSONObject: json, options: []))
+            ?? Data("{}".utf8)
         let body = String(data: data, encoding: .utf8) ?? "{}"
         respond(connection, status: status, body: body)
     }

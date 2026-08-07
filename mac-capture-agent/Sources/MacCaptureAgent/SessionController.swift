@@ -1,7 +1,7 @@
 import Foundation
 import CaptureAgentCore
 
-struct StartSessionRequest: Codable {
+struct StartSessionRequest: Codable, Sendable {
     var session_id: String
     var title: String?
     var language: String?
@@ -12,7 +12,7 @@ struct StartSessionRequest: Codable {
     var chunk_max_seconds: Double?
 }
 
-enum AgentSessionState: String, Codable {
+enum AgentSessionState: String, Codable, Sendable {
     case idle
     case recording
     case paused
@@ -20,6 +20,11 @@ enum AgentSessionState: String, Codable {
     case cancelled
 }
 
+/// Owns live-lesson capture session state.
+///
+/// `@unchecked Sendable` because every mutable field is accessed only while
+/// holding `lock` (including audio ingest from ScreenCaptureKit callbacks and
+/// upload-failure status updates from background tasks).
 final class SessionController: @unchecked Sendable {
     private let lock = NSLock()
     private let config: AgentConfig
@@ -64,7 +69,10 @@ final class SessionController: @unchecked Sendable {
         defer { lock.unlock() }
 
         guard state == .idle || state == .cancelled else {
-            throw AgentHTTPError(status: 409, detail: "Capture agent already has an active session")
+            throw AgentHTTPError(
+                status: 409,
+                detail: "Capture agent already has an active session"
+            )
         }
 
         let formatter = ISO8601DateFormatter()
@@ -241,7 +249,8 @@ final class SessionController: @unchecked Sendable {
         ) {
             // Never upload empty/silence-only chunks.
             if reason == .auto {
-                chunkStartOffset = TimelineClock(lessonStartedAt: startedAt).offsetSeconds()
+                chunkStartOffset = TimelineClock(lessonStartedAt: startedAt)
+                    .offsetSeconds()
             }
             return
         }
@@ -264,9 +273,9 @@ final class SessionController: @unchecked Sendable {
 
         let token = authToken
         let timeout = config.uploadTimeoutSeconds
-        DispatchQueue.global(qos: .utility).async {
+        Task {
             do {
-                try ChunkUploader.upload(
+                try await ChunkUploader.upload(
                     wav: wav,
                     manifest: manifest,
                     uploadURL: uploadURL,
@@ -304,23 +313,39 @@ enum ChunkUploader {
         uploadURL: URL,
         token: String,
         timeout: Double
-    ) throws {
+    ) async throws {
         let boundary = "Boundary-\(UUID().uuidString)"
         var body = Data()
 
         func appendField(name: String, value: String) {
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".data(using: .utf8)!)
+            body.append(
+                "Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n"
+                    .data(using: .utf8)!
+            )
             body.append("\(value)\r\n".data(using: .utf8)!)
         }
 
         appendField(name: "chunk_index", value: String(manifest.chunkIndex))
-        appendField(name: "start_offset_seconds", value: String(manifest.startOffsetSeconds))
-        appendField(name: "end_offset_seconds", value: String(manifest.endOffsetSeconds))
-        appendField(name: "duration_seconds", value: String(manifest.durationSeconds))
+        appendField(
+            name: "start_offset_seconds",
+            value: String(manifest.startOffsetSeconds)
+        )
+        appendField(
+            name: "end_offset_seconds",
+            value: String(manifest.endOffsetSeconds)
+        )
+        appendField(
+            name: "duration_seconds",
+            value: String(manifest.durationSeconds)
+        )
 
+        let filename = String(format: "chunk_%04d.wav", manifest.chunkIndex)
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"audio\"; filename=\"chunk_\(String(format: "%04d", manifest.chunkIndex)).wav\"\r\n".data(using: .utf8)!)
+        body.append(
+            "Content-Disposition: form-data; name=\"audio\"; filename=\"\(filename)\"\r\n"
+                .data(using: .utf8)!
+        )
         body.append("Content-Type: audio/wav\r\n\r\n".data(using: .utf8)!)
         body.append(wav)
         body.append("\r\n".data(using: .utf8)!)
@@ -328,36 +353,25 @@ enum ChunkUploader {
 
         var request = URLRequest(url: uploadURL)
         request.httpMethod = "POST"
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue(
+            "multipart/form-data; boundary=\(boundary)",
+            forHTTPHeaderField: "Content-Type"
+        )
         if !token.isEmpty {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         request.timeoutInterval = timeout
         request.httpBody = body
 
-        let semaphore = DispatchSemaphore(value: 0)
-        var responseError: Error?
-        var statusCode = 0
-
-        URLSession.shared.dataTask(with: request) { _, response, error in
-            if let error {
-                responseError = error
-            }
-            statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-            semaphore.signal()
-        }.resume()
-
-        _ = semaphore.wait(timeout: .now() + timeout + 5)
-        if let responseError {
-            throw responseError
-        }
+        let (_, response) = try await URLSession.shared.data(for: request)
+        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(statusCode) else {
             throw AgentHTTPError(status: statusCode, detail: "Upload HTTP \(statusCode)")
         }
     }
 }
 
-struct AgentHTTPError: Error, LocalizedError {
+struct AgentHTTPError: Error, LocalizedError, Sendable {
     var status: Int
     var detail: String
     var errorDescription: String? { detail }
