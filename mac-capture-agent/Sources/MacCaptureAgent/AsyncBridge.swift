@@ -7,23 +7,23 @@ final class OnceResultBox<T>: @unchecked Sendable {
     private var result: Result<T, Error>?
 
     func set(_ result: Result<T, Error>) {
-        lock.lock()
-        defer { lock.unlock() }
-        precondition(self.result == nil, "OnceResultBox set more than once")
-        self.result = result
+        lock.withLock {
+            precondition(self.result == nil, "OnceResultBox set more than once")
+            self.result = result
+        }
     }
 
     func get() throws -> T {
-        lock.lock()
-        defer { lock.unlock() }
-        guard let result else {
-            throw AgentHTTPError(status: 500, detail: "Missing async bridge result")
-        }
-        switch result {
-        case .success(let value):
-            return value
-        case .failure(let error):
-            throw error
+        try lock.withLock {
+            guard let result else {
+                throw AgentHTTPError(status: 500, detail: "Missing async bridge result")
+            }
+            switch result {
+            case .success(let value):
+                return value
+            case .failure(let error):
+                throw error
+            }
         }
     }
 }

@@ -284,10 +284,16 @@ final class SessionController: @unchecked Sendable {
                 )
             } catch {
                 // Keep capture alive; surface error via status.
-                self.lock.lock()
-                self.lastError = "Chunk upload failed: \(error.localizedDescription)"
-                self.lock.unlock()
+                self.setLastError(
+                    "Chunk upload failed: \(error.localizedDescription)"
+                )
             }
+        }
+    }
+
+    private func setLastError(_ message: String) {
+        lock.withLock {
+            lastError = message
         }
     }
 
