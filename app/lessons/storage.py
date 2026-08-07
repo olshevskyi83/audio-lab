@@ -128,9 +128,27 @@ class SessionStore:
             path.unlink()
 
     def delete_session(self, session_id: str) -> None:
+        """Recursively delete one session directory under the sessions root only."""
+        safe_id = Path(session_id).name
+        if (
+            not session_id
+            or safe_id != session_id
+            or safe_id in {".", ".."}
+            or "/" in session_id
+            or "\\" in session_id
+        ):
+            raise ValueError("Invalid session_id")
+
         directory = self.session_dir(session_id)
-        if directory.exists():
-            shutil.rmtree(directory)
+        root = self.root.resolve()
+        resolved = directory.resolve()
+
+        if resolved == root or root not in resolved.parents:
+            raise ValueError("Session path escapes LIVE_SESSIONS_ROOT")
+        if not resolved.is_dir():
+            raise FileNotFoundError(f"Session not found: {session_id}")
+
+        shutil.rmtree(resolved)
 
     def has_lesson_txt(self, session_id: str) -> bool:
         return self.lesson_txt_path(session_id).is_file()

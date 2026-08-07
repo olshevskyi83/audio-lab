@@ -1267,21 +1267,21 @@
                             target="_blank"
                             rel="noopener"
                         >
-                            View transcript
+                            Переглянути транскрипцію
                         </a>
                         <a
                             id="live-download-transcript"
                             class="button secondary"
                             href="#"
                         >
-                            Download lesson.txt
+                            Завантажити TXT
                         </a>
                         <button
                             id="live-delete-lesson"
                             class="danger-button"
                             type="button"
                         >
-                            Delete lesson
+                            Видалити урок
                         </button>
                     </div>
 
@@ -2788,27 +2788,24 @@
             setLiveMessage(session.error, true);
         }
 
-        const showCompletedActions = isLiveTerminal(session.status)
-            && session.status === "completed";
+        const showCompletedActions = isLiveTerminal(session.status);
         liveCompletedActions.style.display = showCompletedActions
             ? "flex"
             : "none";
 
         if (showCompletedActions) {
-            liveViewTranscript.href = lessonTxtUrl(
-                session.session_id,
-                false
-            );
-            liveDownloadTranscript.href = lessonTxtUrl(
-                session.session_id,
-                true
-            );
-            liveViewTranscript.style.opacity = session.has_lesson_txt
-                ? "1"
-                : "0.55";
-            liveDownloadTranscript.style.opacity = session.has_lesson_txt
-                ? "1"
-                : "0.55";
+            const hasTxt = Boolean(session.has_lesson_txt);
+            liveViewTranscript.href = hasTxt
+                ? lessonTxtUrl(session.session_id, false)
+                : "#";
+            liveDownloadTranscript.href = hasTxt
+                ? lessonTxtUrl(session.session_id, true)
+                : "#";
+            liveViewTranscript.style.display = hasTxt ? "inline-flex" : "none";
+            liveDownloadTranscript.style.display = hasTxt
+                ? "inline-flex"
+                : "none";
+            liveDeleteLesson.style.display = "inline-flex";
         }
 
         const chunks = session.chunks || [];
@@ -2893,7 +2890,7 @@
             if (session.has_lesson_txt) {
                 const view = document.createElement("a");
                 view.className = "button secondary";
-                view.textContent = "View";
+                view.textContent = "Переглянути транскрипцію";
                 view.target = "_blank";
                 view.rel = "noopener";
                 view.href = lessonTxtUrl(session.session_id, false);
@@ -2901,9 +2898,20 @@
 
                 const download = document.createElement("a");
                 download.className = "button secondary";
-                download.textContent = "Download";
+                download.textContent = "Завантажити TXT";
                 download.href = lessonTxtUrl(session.session_id, true);
                 right.appendChild(download);
+            }
+
+            if (isLiveTerminal(session.status)) {
+                const del = document.createElement("button");
+                del.type = "button";
+                del.className = "danger-button";
+                del.textContent = "Видалити урок";
+                del.addEventListener("click", () => {
+                    deleteLiveLesson(session.session_id);
+                });
+                right.appendChild(del);
             }
 
             item.appendChild(left);
@@ -3141,23 +3149,26 @@
         );
     });
 
-    liveDeleteLesson.addEventListener("click", async () => {
-        if (!liveSession || liveSession.status !== "completed") {
+    async function deleteLiveLesson(sessionId) {
+        if (!sessionId) {
             return;
         }
-        if (!window.confirm("Delete this completed lesson?")) {
+        if (!window.confirm(
+            "Видалити цей урок разом з аудіо та транскрипцією?"
+        )) {
             return;
         }
 
         liveInFlight = true;
         try {
-            const sid = liveSession.session_id;
             await liveFetch(
-                "/api/live/sessions/" + encodeURIComponent(sid),
+                "/api/live/sessions/" + encodeURIComponent(sessionId),
                 { method: "DELETE" }
             );
-            renderLiveSession(null);
-            setLiveMessage("Lesson deleted.");
+            if (liveSession && liveSession.session_id === sessionId) {
+                renderLiveSession(null);
+            }
+            setLiveMessage("Урок видалено.");
             await refreshRecentLessons();
         } catch (error) {
             setLiveMessage(error.message, true);
@@ -3165,6 +3176,13 @@
             liveInFlight = false;
             updateLiveControls(liveSession);
         }
+    }
+
+    liveDeleteLesson.addEventListener("click", async () => {
+        if (!liveSession || !isLiveTerminal(liveSession.status)) {
+            return;
+        }
+        await deleteLiveLesson(liveSession.session_id);
     });
 
     refreshLiveAgent();

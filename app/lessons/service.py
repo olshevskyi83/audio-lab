@@ -119,19 +119,21 @@ class LessonService:
     async def delete_lesson(self, session_id: str) -> dict[str, Any]:
         async with self._lock:
             session = self._load(session_id)
-            if session.status in {
-                SessionStatus.RECORDING,
-                SessionStatus.PAUSED,
-                SessionStatus.STOPPING,
-                SessionStatus.PROCESSING,
-                SessionStatus.CANCELLING,
-                SessionStatus.CREATED,
+            if session.status not in {
+                SessionStatus.COMPLETED,
+                SessionStatus.CANCELLED,
+                SessionStatus.FAILED,
             }:
                 raise LessonError(
-                    "Cannot delete an in-progress live lesson; stop or cancel first",
+                    "Cannot delete an in-progress live lesson; cancel first",
                     status_code=409,
                 )
-            self.store.delete_session(session_id)
+            try:
+                self.store.delete_session(session_id)
+            except ValueError as exc:
+                raise LessonError(str(exc), status_code=400) from exc
+            except FileNotFoundError as exc:
+                raise LessonError("Session not found", status_code=404) from exc
             return {
                 "session_id": session_id,
                 "deleted": True,

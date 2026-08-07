@@ -1,13 +1,9 @@
 from __future__ import annotations
 
-import asyncio
 from pathlib import Path
 
-import pytest
-from fastapi.testclient import TestClient
-
 from tests.test_live_api import api_client  # noqa: F401
-from tests.test_live_lesson import FakeCapture, FakeCore, make_wav
+from tests.test_live_lesson import make_wav
 
 
 def _start_with_chunk(client, core, *, complete: bool = False):
@@ -118,15 +114,63 @@ def test_delete_completed_lesson(api_client):
     sid, _ = _start_with_chunk(client, core, complete=True)
     client.post(f"/api/live/sessions/{sid}/stop")
 
+    session_dir = service.store.session_dir(sid)
+    assert session_dir.is_dir()
+    assert (session_dir / "session.json").is_file()
+    assert (session_dir / "lesson.txt").is_file()
+    assert (session_dir / "audio").is_dir()
+    assert (session_dir / "transcripts").is_dir()
+
     deleted = client.delete(f"/api/live/sessions/{sid}")
     assert deleted.status_code == 200
     assert deleted.json()["deleted"] is True
+
+    assert not session_dir.exists()
 
     missing = client.get(f"/api/live/sessions/{sid}")
     assert missing.status_code == 404
 
     listed = client.get("/api/live/sessions?limit=10")
     assert all(item["session_id"] != sid for item in listed.json()["sessions"])
+
+
+def test_delete_cancelled_and_failed_allowed(api_client, tmp_path: Path):
+    client, service, _, _ = api_client
+
+    started = client.post(
+        "/api/live/sessions/start",
+        json={"title": "Cancel me", "language": "auto"},
+    )
+    sid = started.json()["session_id"]
+    cancelled = client.post(f"/api/live/sessions/{sid}/cancel")
+    assert cancelled.json()["status"] == "cancelled"
+    assert client.delete(f"/api/live/sessions/{sid}").status_code == 200
+    assert not service.store.session_dir(sid).exists()
+
+    # Create a failed session via direct store save.
+    from app.lessons.models import LessonSession, SessionStatus, utc_now_iso
+
+    failed = LessonSession.create(title="Failed", language="auto")
+    failed.status = SessionStatus.FAILED
+    failed.ended_at = utc_now_iso()
+    failed.error = "boom"
+    service.store.save(failed)
+    assert client.delete(
+        f"/api/live/sessions/{failed.session_id}"
+    ).status_code == 200
+
+
+def test_delete_path_traversal_blocked(api_client):
+    client, service, _, _ = api_client
+    for bad_id in ("../escape", "..", "a/b", "a\\b"):
+        response = client.delete(f"/api/live/sessions/{bad_id}")
+        assert response.status_code in {400, 404, 422}
+
+    import pytest
+
+    for bad_id in ("../escape", "..", "a/b", "a\\b", "", "."):
+        with pytest.raises(ValueError):
+            service.store.delete_session(bad_id)
 
 
 def test_cannot_delete_in_progress_lesson(api_client):
@@ -146,12 +190,14 @@ def test_index_keeps_completed_lesson_in_ui_contract(api_client):
     html = client.get("/").text
     assert "Recent lessons" in html
     assert "live-recent-list" in html
-    assert "View transcript" in html
-    assert "Download lesson.txt" in html
-    assert "Delete lesson" in html
+    assert "Переглянути транскрипцію" in html
+    assert "Завантажити TXT" in html
+    assert "Видалити урок" in html
+    assert "Видалити цей урок разом з аудіо та транскрипцією?" in html
     # Critical: do not clear panel just because /active is null.
     assert "isLiveTerminal(liveSession.status)" in html
     assert "/api/live/sessions?limit=10" in html
+    assert "deleteLiveLesson" in html
 
 
 def test_completion_visible_via_poll_without_reload(api_client):
