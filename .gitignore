@@ -10,3 +10,10 @@ venv/
 
 app/main.py.backup*
 app/templates/*.backup*
+
+.pytest_cache/
+.mypy_cache/
+.venv/
+mac-capture-agent/.build/
+*.xcodeproj/
+DerivedData/

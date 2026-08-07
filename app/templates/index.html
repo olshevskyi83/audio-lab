@@ -175,6 +175,147 @@
             background: #bd5151;
         }
 
+        button.danger-button:hover,
+        .button.danger-button:hover {
+            background: #bd5151;
+        }
+
+        .live-lesson-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr);
+            gap: 14px;
+        }
+
+        .live-form-row {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .live-form-row label {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .live-form-row input,
+        .live-form-row select {
+            width: 100%;
+            min-height: 38px;
+            padding: 8px 11px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--panel-soft);
+            color: var(--text);
+            font: inherit;
+        }
+
+        .live-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .live-status-card {
+            padding: 14px;
+            border-radius: 10px;
+            background: var(--panel-soft);
+        }
+
+        .live-status-card .live-title {
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+
+        .live-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            margin: 12px 0;
+        }
+
+        .live-chunk-list {
+            margin-top: 12px;
+            max-height: 280px;
+            overflow: auto;
+            display: grid;
+            gap: 8px;
+        }
+
+        .live-chunk-item {
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: #1b2029;
+            border: 1px solid var(--border);
+            font-size: 13px;
+        }
+
+        .live-chunk-item .chunk-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+
+        .live-agent-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: var(--panel-soft);
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .live-completed-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .live-recent {
+            margin-top: 18px;
+        }
+
+        .live-recent-list {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .live-recent-item {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: var(--panel-soft);
+            border: 1px solid var(--border);
+        }
+
+        .live-recent-item button.linkish {
+            background: transparent;
+            color: var(--blue);
+            min-height: auto;
+            padding: 0;
+        }
+
+        .live-recent-meta {
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 860px) {
+            .live-lesson-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .metrics {
             display: grid;
             grid-template-columns:
@@ -904,7 +1045,6 @@
                         id="audio-file"
                         type="file"
                         name="file"
-                        accept="audio/*,video/*"
                         required
                     >
 
@@ -985,6 +1125,183 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </section>
+
+    <section class="panel" id="live-lesson">
+        <h2>LIVE LESSON</h2>
+
+        <p class="muted">
+            Запис лише системного аудіо macOS (ScreenCaptureKit).
+            Мікрофон не використовується. Чанки транскрибуються під час уроку.
+        </p>
+
+        <div
+            id="live-agent-pill"
+            class="live-agent-pill"
+        >
+            Capture Agent: перевірка…
+        </div>
+
+        <div class="live-lesson-grid">
+            <div class="input-card">
+                <div class="live-form-row">
+                    <label for="live-title">Назва уроку</label>
+                    <input
+                        id="live-title"
+                        type="text"
+                        maxlength="200"
+                        placeholder="Наприклад: Zoom — Python lesson"
+                    >
+                </div>
+
+                <div class="live-form-row">
+                    <label for="live-language">Мова</label>
+                    <select id="live-language">
+                        <option value="auto" selected>auto</option>
+                        <option value="uk">uk</option>
+                        <option value="en">en</option>
+                        <option value="de">de</option>
+                        <option value="pl">pl</option>
+                    </select>
+                </div>
+
+                <div class="live-controls">
+                    <button id="live-start" type="button">
+                        Start Lesson
+                    </button>
+                    <button
+                        id="live-pause"
+                        class="secondary"
+                        type="button"
+                        disabled
+                    >
+                        Pause
+                    </button>
+                    <button
+                        id="live-resume"
+                        class="secondary"
+                        type="button"
+                        disabled
+                    >
+                        Resume
+                    </button>
+                    <button
+                        id="live-stop"
+                        type="button"
+                        disabled
+                    >
+                        Stop
+                    </button>
+                    <button
+                        id="live-cancel"
+                        class="danger-button"
+                        type="button"
+                        disabled
+                    >
+                        Cancel
+                    </button>
+                </div>
+
+                <p
+                    id="live-message"
+                    class="muted"
+                    style="margin: 12px 0 0;"
+                ></p>
+            </div>
+
+            <div
+                id="live-status-card"
+                class="live-status-card"
+            >
+                <div
+                    id="live-empty"
+                    class="muted"
+                >
+                    Немає активного уроку. Натисніть Start Lesson.
+                </div>
+
+                <div
+                    id="live-active"
+                    style="display: none;"
+                >
+                    <div
+                        id="live-session-title"
+                        class="live-title"
+                    ></div>
+
+                    <div>
+                        Status:
+                        <strong id="live-session-status"></strong>
+                    </div>
+
+                    <div class="live-metrics">
+                        <div class="metric">
+                            <span>Elapsed</span>
+                            <strong id="live-elapsed">00:00:00</strong>
+                        </div>
+                        <div class="metric">
+                            <span>Captured</span>
+                            <strong id="live-captured">00:00:00</strong>
+                        </div>
+                        <div class="metric">
+                            <span>Chunks</span>
+                            <strong id="live-chunk-counts">0 / 0</strong>
+                        </div>
+                    </div>
+
+                    <div
+                        id="live-activity"
+                        class="muted"
+                    ></div>
+
+                    <div
+                        id="live-completed-actions"
+                        class="live-completed-actions"
+                        style="display: none;"
+                    >
+                        <a
+                            id="live-view-transcript"
+                            class="button secondary"
+                            href="#"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            View transcript
+                        </a>
+                        <a
+                            id="live-download-transcript"
+                            class="button secondary"
+                            href="#"
+                        >
+                            Download lesson.txt
+                        </a>
+                        <button
+                            id="live-delete-lesson"
+                            class="danger-button"
+                            type="button"
+                        >
+                            Delete lesson
+                        </button>
+                    </div>
+
+                    <div
+                        id="live-chunk-list"
+                        class="live-chunk-list"
+                    ></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="live-recent">
+            <h3>Recent lessons</h3>
+            <p class="muted" style="margin-bottom: 0;">
+                Latest sessions (active, completed, cancelled, failed).
+            </p>
+            <div
+                id="live-recent-list"
+                class="live-recent-list"
+            ></div>
         </div>
     </section>
 
@@ -2311,6 +2628,555 @@
         }
     );
 
+    let liveInFlight = false;
+    let liveSession = null;
+    let livePollTimer = null;
+
+    const liveTitle = document.getElementById("live-title");
+    const liveLanguage = document.getElementById("live-language");
+    const liveStart = document.getElementById("live-start");
+    const livePause = document.getElementById("live-pause");
+    const liveResume = document.getElementById("live-resume");
+    const liveStop = document.getElementById("live-stop");
+    const liveCancel = document.getElementById("live-cancel");
+    const liveMessage = document.getElementById("live-message");
+    const liveAgentPill = document.getElementById("live-agent-pill");
+    const liveEmpty = document.getElementById("live-empty");
+    const liveActive = document.getElementById("live-active");
+    const liveSessionTitle = document.getElementById("live-session-title");
+    const liveSessionStatus = document.getElementById("live-session-status");
+    const liveElapsed = document.getElementById("live-elapsed");
+    const liveCaptured = document.getElementById("live-captured");
+    const liveChunkCounts = document.getElementById("live-chunk-counts");
+    const liveActivity = document.getElementById("live-activity");
+    const liveChunkList = document.getElementById("live-chunk-list");
+    const liveCompletedActions = document.getElementById("live-completed-actions");
+    const liveViewTranscript = document.getElementById("live-view-transcript");
+    const liveDownloadTranscript = document.getElementById("live-download-transcript");
+    const liveDeleteLesson = document.getElementById("live-delete-lesson");
+    const liveRecentList = document.getElementById("live-recent-list");
+
+    function formatLiveDuration(seconds) {
+        const total = Math.max(0, Math.floor(Number(seconds) || 0));
+        const hours = Math.floor(total / 3600);
+        const minutes = Math.floor((total % 3600) / 60);
+        const secs = total % 60;
+        return [
+            String(hours).padStart(2, "0"),
+            String(minutes).padStart(2, "0"),
+            String(secs).padStart(2, "0"),
+        ].join(":");
+    }
+
+    function formatLiveRange(start, end) {
+        return formatLiveDuration(start) + "–" + formatLiveDuration(end);
+    }
+
+    function setLiveMessage(text, isError) {
+        liveMessage.textContent = text || "";
+        liveMessage.className = isError ? "danger" : "muted";
+        liveMessage.style.margin = "12px 0 0";
+    }
+
+    function isLiveInProgress(status) {
+        return [
+            "created",
+            "recording",
+            "paused",
+            "stopping",
+            "processing",
+            "cancelling",
+        ].includes(status);
+    }
+
+    function isLiveTerminal(status) {
+        return [
+            "completed",
+            "cancelled",
+            "failed",
+        ].includes(status);
+    }
+
+    function lessonTxtUrl(sessionId, download) {
+        const base = "/api/live/sessions/"
+            + encodeURIComponent(sessionId)
+            + "/lesson.txt";
+        return download ? (base + "?download=1") : base;
+    }
+
+    function updateLiveControls(session) {
+        const status = session ? session.status : null;
+        const recording = status === "recording";
+        const paused = status === "paused";
+        const busy = [
+            "stopping",
+            "processing",
+            "cancelling",
+        ].includes(status);
+        const canStart = !session || isLiveTerminal(status);
+
+        liveStart.disabled = !canStart || liveInFlight;
+        livePause.disabled = !recording || liveInFlight;
+        liveResume.disabled = !paused || liveInFlight;
+        liveStop.disabled = !(recording || paused) || liveInFlight;
+        liveCancel.disabled = !session
+            || isLiveTerminal(status)
+            || liveInFlight;
+
+        liveTitle.disabled = !canStart;
+        liveLanguage.disabled = !canStart;
+
+        if (busy) {
+            livePause.disabled = true;
+            liveResume.disabled = true;
+            liveStop.disabled = true;
+        }
+    }
+
+    function renderLiveSession(session) {
+        liveSession = session;
+
+        if (!session) {
+            liveEmpty.style.display = "block";
+            liveActive.style.display = "none";
+            liveCompletedActions.style.display = "none";
+            updateLiveControls(null);
+            return;
+        }
+
+        liveEmpty.style.display = "none";
+        liveActive.style.display = "block";
+        liveSessionTitle.textContent = session.title || "Lesson";
+        liveSessionStatus.textContent = session.status;
+        liveElapsed.textContent = formatLiveDuration(
+            session.wall_duration_seconds
+        );
+        liveCaptured.textContent = formatLiveDuration(
+            session.captured_duration_seconds
+        );
+        liveChunkCounts.textContent = (
+            (session.transcribed_chunk_count || 0)
+            + " / "
+            + (session.chunk_count || 0)
+        );
+
+        if (session.status === "recording") {
+            liveActivity.textContent =
+                "Recording… system audio is being captured.";
+        } else if (session.status === "paused") {
+            liveActivity.textContent =
+                "Paused. No audio is currently being recorded.";
+        } else if (
+            session.status === "processing"
+            || session.status === "stopping"
+        ) {
+            liveActivity.textContent =
+                "Processing… waiting for remaining chunk transcriptions.";
+        } else if (session.status === "completed") {
+            liveActivity.textContent = session.has_lesson_txt
+                ? "Completed. lesson.txt is available."
+                : "Completed.";
+        } else if (session.status === "cancelled") {
+            liveActivity.textContent = "Cancelled.";
+        } else if (session.status === "failed") {
+            liveActivity.textContent = session.error || "Failed.";
+        } else {
+            liveActivity.textContent = "";
+        }
+
+        if (session.error && session.status !== "failed") {
+            setLiveMessage(session.error, true);
+        }
+
+        const showCompletedActions = isLiveTerminal(session.status)
+            && session.status === "completed";
+        liveCompletedActions.style.display = showCompletedActions
+            ? "flex"
+            : "none";
+
+        if (showCompletedActions) {
+            liveViewTranscript.href = lessonTxtUrl(
+                session.session_id,
+                false
+            );
+            liveDownloadTranscript.href = lessonTxtUrl(
+                session.session_id,
+                true
+            );
+            liveViewTranscript.style.opacity = session.has_lesson_txt
+                ? "1"
+                : "0.55";
+            liveDownloadTranscript.style.opacity = session.has_lesson_txt
+                ? "1"
+                : "0.55";
+        }
+
+        const chunks = session.chunks || [];
+        liveChunkList.innerHTML = "";
+
+        chunks
+            .slice()
+            .reverse()
+            .forEach((chunk) => {
+                const item = document.createElement("div");
+                item.className = "live-chunk-item";
+
+                const head = document.createElement("div");
+                head.className = "chunk-head";
+
+                const left = document.createElement("strong");
+                left.textContent = "#" + chunk.chunk_index;
+
+                const right = document.createElement("span");
+                right.textContent = chunk.status;
+
+                head.appendChild(left);
+                head.appendChild(right);
+
+                const range = document.createElement("div");
+                range.className = "muted";
+                range.textContent = formatLiveRange(
+                    chunk.start_offset_seconds,
+                    chunk.end_offset_seconds
+                );
+
+                item.appendChild(head);
+                item.appendChild(range);
+                liveChunkList.appendChild(item);
+            });
+
+        updateLiveControls(session);
+    }
+
+    function renderRecentLessons(sessions) {
+        liveRecentList.innerHTML = "";
+
+        if (!sessions || sessions.length === 0) {
+            const empty = document.createElement("p");
+            empty.className = "muted";
+            empty.textContent = "No lessons yet.";
+            liveRecentList.appendChild(empty);
+            return;
+        }
+
+        sessions.forEach((session) => {
+            const item = document.createElement("div");
+            item.className = "live-recent-item";
+
+            const left = document.createElement("div");
+            const titleBtn = document.createElement("button");
+            titleBtn.type = "button";
+            titleBtn.className = "linkish";
+            titleBtn.textContent = session.title || session.session_id;
+            titleBtn.addEventListener("click", () => {
+                focusLiveSession(session.session_id);
+            });
+
+            const meta = document.createElement("div");
+            meta.className = "live-recent-meta";
+            meta.textContent = [
+                session.status,
+                formatLiveDuration(session.wall_duration_seconds)
+                    + " wall",
+                (session.transcribed_chunk_count || 0)
+                    + "/"
+                    + (session.chunk_count || 0)
+                    + " chunks",
+            ].join(" · ");
+
+            left.appendChild(titleBtn);
+            left.appendChild(meta);
+
+            const right = document.createElement("div");
+            right.className = "live-controls";
+
+            if (session.has_lesson_txt) {
+                const view = document.createElement("a");
+                view.className = "button secondary";
+                view.textContent = "View";
+                view.target = "_blank";
+                view.rel = "noopener";
+                view.href = lessonTxtUrl(session.session_id, false);
+                right.appendChild(view);
+
+                const download = document.createElement("a");
+                download.className = "button secondary";
+                download.textContent = "Download";
+                download.href = lessonTxtUrl(session.session_id, true);
+                right.appendChild(download);
+            }
+
+            item.appendChild(left);
+            item.appendChild(right);
+            liveRecentList.appendChild(item);
+        });
+    }
+
+    async function liveFetch(url, options) {
+        const response = await fetch(url, options || {});
+        let payload = null;
+
+        try {
+            payload = await response.json();
+        } catch (_error) {
+            payload = null;
+        }
+
+        if (!response.ok) {
+            const detail = payload && payload.detail
+                ? payload.detail
+                : ("HTTP " + response.status);
+            throw new Error(
+                typeof detail === "string"
+                    ? detail
+                    : JSON.stringify(detail)
+            );
+        }
+
+        return payload;
+    }
+
+    async function refreshLiveAgent() {
+        try {
+            const payload = await liveFetch("/api/live/agent");
+            if (payload.available) {
+                liveAgentPill.textContent = "Capture Agent: online";
+                liveAgentPill.classList.remove("danger");
+                liveAgentPill.classList.add("ok");
+            } else {
+                liveAgentPill.textContent = (
+                    "Capture Agent: offline"
+                    + (payload.error ? (" — " + payload.error) : "")
+                );
+                liveAgentPill.classList.remove("ok");
+                liveAgentPill.classList.add("danger");
+            }
+        } catch (error) {
+            liveAgentPill.textContent =
+                "Capture Agent: error — " + error.message;
+            liveAgentPill.classList.remove("ok");
+            liveAgentPill.classList.add("danger");
+        }
+    }
+
+    async function pollLiveSessionById(sessionId) {
+        return liveFetch(
+            "/api/live/sessions/"
+            + encodeURIComponent(sessionId)
+            + "/poll",
+            { method: "POST" }
+        );
+    }
+
+    async function focusLiveSession(sessionId) {
+        try {
+            const session = await liveFetch(
+                "/api/live/sessions/"
+                + encodeURIComponent(sessionId)
+            );
+            renderLiveSession(session);
+            setLiveMessage("");
+        } catch (error) {
+            setLiveMessage(error.message, true);
+        }
+    }
+
+    async function refreshRecentLessons() {
+        try {
+            const payload = await liveFetch(
+                "/api/live/sessions?limit=10"
+            );
+            renderRecentLessons(payload.sessions || []);
+        } catch (_error) {
+            // Keep previous recent list on transient errors.
+        }
+    }
+
+    async function refreshLiveSession() {
+        const payload = await liveFetch("/api/live/sessions/active");
+        const active = payload.session || null;
+
+        if (active) {
+            let session = active;
+            if (isLiveInProgress(active.status)) {
+                try {
+                    session = await pollLiveSessionById(
+                        active.session_id
+                    );
+                } catch (_error) {
+                    session = active;
+                }
+            }
+            renderLiveSession(session);
+        } else if (
+            liveSession
+            && isLiveInProgress(liveSession.status)
+        ) {
+            // Race: stop moved to processing/completed between polls.
+            try {
+                const session = await pollLiveSessionById(
+                    liveSession.session_id
+                );
+                renderLiveSession(session);
+            } catch (_error) {
+                try {
+                    const session = await liveFetch(
+                        "/api/live/sessions/"
+                        + encodeURIComponent(liveSession.session_id)
+                    );
+                    renderLiveSession(session);
+                } catch (_inner) {
+                    // Keep current panel content.
+                }
+            }
+        } else if (liveSession && isLiveTerminal(liveSession.status)) {
+            // Keep completed/cancelled/failed lesson visible after Stop.
+            try {
+                const session = await liveFetch(
+                    "/api/live/sessions/"
+                    + encodeURIComponent(liveSession.session_id)
+                );
+                renderLiveSession(session);
+            } catch (_error) {
+                // Keep current panel content.
+            }
+        } else {
+            renderLiveSession(null);
+        }
+
+        await refreshRecentLessons();
+    }
+
+    async function liveAction(url, body) {
+        if (liveInFlight) {
+            return;
+        }
+
+        liveInFlight = true;
+        updateLiveControls(liveSession);
+        setLiveMessage("");
+
+        try {
+            const options = {
+                method: "POST",
+                headers: {},
+            };
+
+            if (body) {
+                options.headers["Content-Type"] = "application/json";
+                options.body = JSON.stringify(body);
+            }
+
+            const payload = await liveFetch(url, options);
+            renderLiveSession(payload);
+            setLiveMessage("");
+            await refreshRecentLessons();
+        } catch (error) {
+            setLiveMessage(error.message, true);
+        } finally {
+            liveInFlight = false;
+            updateLiveControls(liveSession);
+            await refreshLiveAgent();
+        }
+    }
+
+    liveStart.addEventListener("click", async () => {
+        const title = (liveTitle.value || "").trim();
+        if (!title) {
+            setLiveMessage("Вкажіть назву уроку.", true);
+            liveTitle.focus();
+            return;
+        }
+
+        await liveAction("/api/live/sessions/start", {
+            title: title,
+            language: liveLanguage.value || "auto",
+        });
+    });
+
+    livePause.addEventListener("click", async () => {
+        if (!liveSession) {
+            return;
+        }
+        await liveAction(
+            "/api/live/sessions/"
+            + encodeURIComponent(liveSession.session_id)
+            + "/pause"
+        );
+    });
+
+    liveResume.addEventListener("click", async () => {
+        if (!liveSession) {
+            return;
+        }
+        await liveAction(
+            "/api/live/sessions/"
+            + encodeURIComponent(liveSession.session_id)
+            + "/resume"
+        );
+    });
+
+    liveStop.addEventListener("click", async () => {
+        if (!liveSession) {
+            return;
+        }
+        await liveAction(
+            "/api/live/sessions/"
+            + encodeURIComponent(liveSession.session_id)
+            + "/stop"
+        );
+    });
+
+    liveCancel.addEventListener("click", async () => {
+        if (!liveSession) {
+            return;
+        }
+        if (!window.confirm("Cancel this live lesson session?")) {
+            return;
+        }
+        await liveAction(
+            "/api/live/sessions/"
+            + encodeURIComponent(liveSession.session_id)
+            + "/cancel"
+        );
+    });
+
+    liveDeleteLesson.addEventListener("click", async () => {
+        if (!liveSession || liveSession.status !== "completed") {
+            return;
+        }
+        if (!window.confirm("Delete this completed lesson?")) {
+            return;
+        }
+
+        liveInFlight = true;
+        try {
+            const sid = liveSession.session_id;
+            await liveFetch(
+                "/api/live/sessions/" + encodeURIComponent(sid),
+                { method: "DELETE" }
+            );
+            renderLiveSession(null);
+            setLiveMessage("Lesson deleted.");
+            await refreshRecentLessons();
+        } catch (error) {
+            setLiveMessage(error.message, true);
+        } finally {
+            liveInFlight = false;
+            updateLiveControls(liveSession);
+        }
+    });
+
+    refreshLiveAgent();
+    refreshLiveSession();
+    livePollTimer = window.setInterval(() => {
+        if (document.hidden || liveInFlight) {
+            return;
+        }
+        refreshLiveSession();
+        refreshLiveAgent();
+    }, 2000);
+
     window.setInterval(
         () => {
             const fileSelected =
@@ -2345,7 +3211,13 @@
                         .tagName === "INPUT"
                     || document.activeElement
                         .tagName === "TEXTAREA"
+                    || document.activeElement
+                        .tagName === "SELECT"
                 );
+
+            const liveIsActive =
+                liveSession
+                && isLiveInProgress(liveSession.status);
 
             const canRefresh =
                 hasActiveTasks
@@ -2357,7 +3229,9 @@
                 && !recordingActive
                 && !recordedBlob
                 && !uploadInProgress
-                && !ragInProgress;
+                && !ragInProgress
+                && !liveIsActive
+                && !liveInFlight;
 
             if (canRefresh) {
                 window.location.reload();

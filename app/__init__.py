@@ -1,0 +1,1 @@
+"""Audio Lab application package."""

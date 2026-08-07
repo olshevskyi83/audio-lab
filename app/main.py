@@ -1,5 +1,6 @@
 import json
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -11,6 +12,9 @@ from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, Field
+
+from app.lessons.routes import router as live_lesson_router
+from app.lessons.service import lesson_service
 
 
 AUDIO_ROOT = Path(
@@ -33,6 +37,8 @@ MAX_UPLOAD_MB = int(
 )
 
 MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
+
+APP_VERSION = "0.3.0"
 
 SUPPORTED_EXTENSIONS = {
     ".aac",
@@ -70,15 +76,33 @@ class KnowledgeChatRequest(BaseModel):
     temperature: float = Field(default=0.1, ge=0.0, le=2.0)
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    ensure_directories()
+    lesson_service.ensure_ready()
+    await lesson_service.recover_sessions()
+    await lesson_service.start_background_poller()
+    try:
+        yield
+    finally:
+        await lesson_service.stop_background_poller()
+
+
 app = FastAPI(
     title="Audio Lab",
-    version="0.2.0",
+    version=APP_VERSION,
+    lifespan=lifespan,
 )
+
+app.include_router(live_lesson_router)
 
 
 templates = Environment(
     loader=FileSystemLoader(
-        "/app/app/templates"
+        str(
+            Path(__file__).resolve().parent
+            / "templates"
+        )
     ),
     autoescape=select_autoescape(
         ["html", "xml"]
@@ -93,6 +117,7 @@ def ensure_directories() -> None:
             parents=True,
             exist_ok=True,
         )
+    lesson_service.ensure_ready()
 
 
 def safe_path(
@@ -398,11 +423,6 @@ async def call_core_action(
             False,
             f"Homelab Core недоступний: {exc}",
         )
-
-
-@app.on_event("startup")
-async def startup() -> None:
-    ensure_directories()
 
 
 @app.get(
@@ -864,14 +884,20 @@ async def knowledge_chat(
 async def health() -> dict[str, Any]:
     status = await core_status()
 
+    agent = await lesson_service.agent_status()
+
     return {
         "status": "ok",
-        "version": "0.2.0",
+        "version": APP_VERSION,
         "audio_root": str(
             AUDIO_ROOT
         ),
         "core_available": (
             status is not None
+        ),
+        "live_capture_agent_available": agent.get(
+            "available",
+            False,
         ),
         "folders": {
             folder: len(
