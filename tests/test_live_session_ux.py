@@ -74,7 +74,7 @@ def test_transcript_download_available_after_stop(api_client):
     )
     assert download.status_code == 200
     assert "attachment" in download.headers.get("content-disposition", "")
-    assert "lesson.txt" in download.headers.get("content-disposition", "")
+    assert "recording.txt" in download.headers.get("content-disposition", "")
 
 
 def test_stop_with_outstanding_transcription_shows_processing(api_client):
@@ -187,19 +187,21 @@ def test_cannot_delete_in_progress_lesson(api_client):
 
 
 def test_index_keeps_completed_lesson_in_ui_contract(api_client):
-    """UI keeps Recent Lessons compact and active panel simple."""
+    """UI keeps Recent Recordings compact and active panel simple."""
     client, _, _, _ = api_client
     html = client.get("/").text
-    assert "Recent Lessons" in html
+    assert "Recent Recordings" in html
+    assert "LIVE RECORDING" in html
     assert "live-recent-list" in html
     assert "live-wave" in html
     assert "Записано:" in html
     assert "Пауза:" in html
+    assert "Cancel the current recording?" in html
     assert ">Elapsed<" not in html
     assert ">Chunks<" not in html
     assert "clearOnStop" in html
-    assert "/live/sessions/" in html
-    assert "Скасувати поточний урок?" in html
+    assert "/live/recordings/" in html
+    assert "Скасувати поточний урок?" not in html
 
 
 @pytest.mark.asyncio

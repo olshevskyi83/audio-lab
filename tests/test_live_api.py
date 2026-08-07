@@ -24,6 +24,9 @@ def api_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("AUDIO_LAB_PUBLIC_URL", "http://lab.test")
 
     # Reload settings-dependent globals used by routes.
+    from app.knowledge import service as knowledge_module
+    from app.knowledge.registry import KnowledgeRegistry
+    from app.knowledge.service import KnowledgeService
     from app.lessons import config as config_module
     from app.lessons import routes as routes_module
     from app.lessons import service as service_module
@@ -35,6 +38,12 @@ def api_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     config_module.settings = settings
     routes_module.settings = settings
 
+    knowledge = KnowledgeService(
+        registry=KnowledgeRegistry(audio_root / "knowledge" / "registry.json")
+    )
+    knowledge.ensure_ready()
+    knowledge_module.knowledge_service = knowledge
+
     capture = FakeCapture()
     core = FakeCore()
     service = LessonService(
@@ -42,15 +51,19 @@ def api_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         store=SessionStore(settings.sessions_root),
         capture_client=capture,  # type: ignore[arg-type]
         core_client=core,  # type: ignore[arg-type]
+        knowledge=knowledge,
     )
     service.ensure_ready()
     service_module.lesson_service = service
     routes_module.lesson_service = service
 
     import app.main as main_module
+    import app.knowledge.routes as knowledge_routes
 
     main_module.lesson_service = service
+    main_module.knowledge_service = knowledge
     main_module.AUDIO_ROOT = audio_root
+    knowledge_routes.knowledge_service = knowledge
 
     with TestClient(main_module.app) as client:
         yield client, service, capture, core

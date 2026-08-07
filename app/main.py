@@ -13,6 +13,8 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, Field
 
+from app.knowledge.routes import router as knowledge_router
+from app.knowledge.service import knowledge_service
 from app.lessons.assembly import format_timestamp
 from app.lessons.routes import router as live_lesson_router
 from app.lessons.service import LessonError, lesson_service
@@ -80,6 +82,7 @@ class KnowledgeChatRequest(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     ensure_directories()
+    knowledge_service.ensure_ready()
     lesson_service.ensure_ready()
     await lesson_service.recover_sessions()
     await lesson_service.start_background_poller()
@@ -96,6 +99,7 @@ app = FastAPI(
 )
 
 app.include_router(live_lesson_router)
+app.include_router(knowledge_router)
 
 
 templates = Environment(
@@ -118,6 +122,7 @@ def ensure_directories() -> None:
             parents=True,
             exist_ok=True,
         )
+    knowledge_service.ensure_ready()
     lesson_service.ensure_ready()
 
 
@@ -360,7 +365,7 @@ async def call_core_action(
     *,
     method: str,
     endpoint: str,
-) -> tuple[bool, str]:
+) -> tuple[bool, str, dict[str, Any]]:
     try:
         async with httpx.AsyncClient(
             timeout=1800.0
@@ -391,6 +396,7 @@ async def call_core_action(
             return (
                 False,
                 message[:1000],
+                payload if isinstance(payload, dict) else {},
             )
 
         if isinstance(payload, dict):
@@ -403,34 +409,42 @@ async def call_core_action(
                 return (
                     True,
                     (
-                        "Транскрипцію додано в Qdrant. "
+                        "Транскрипцію додано в базу знань. "
                         f"Фрагментів: {chunk_count or 0}."
                     ),
+                    payload,
                 )
 
             if status == "not_indexed":
                 return (
                     True,
-                    "Транскрипцію видалено з Qdrant.",
+                    "Транскрипцію видалено з бази знань.",
+                    payload,
                 )
 
         return (
             True,
             "Операцію успішно виконано.",
+            payload if isinstance(payload, dict) else {},
         )
 
     except httpx.HTTPError as exc:
         return (
             False,
             f"Homelab Core недоступний: {exc}",
+            {},
         )
 
 
 @app.get(
+    "/live/recordings/{session_id}",
+    response_class=HTMLResponse,
+)
+@app.get(
     "/live/sessions/{session_id}",
     response_class=HTMLResponse,
 )
-async def live_lesson_detail(
+async def live_recording_detail(
     session_id: str,
 ) -> HTMLResponse:
     try:
@@ -476,7 +490,7 @@ async def live_lesson_detail(
             errors="replace",
         )
 
-    template = templates.get_template("lesson.html")
+    template = templates.get_template("recording.html")
     return HTMLResponse(
         template.render(
             session=session,
@@ -554,6 +568,46 @@ async def index(
         "index.html"
     )
 
+    archive_files = list_folder("archive")
+    for item in archive_files:
+        knowledge_doc = knowledge_service.is_filename_indexed(item["name"])
+        item["knowledge_indexed"] = bool(knowledge_doc)
+        item["knowledge_id"] = (
+            knowledge_doc["knowledge_id"] if knowledge_doc else None
+        )
+
+    folders = {
+        folder: list_folder(folder)
+        for folder in FOLDERS
+    }
+    folders["archive"] = archive_files
+
+    # Enrich completed tasks with stable knowledge ids from local registry.
+    for task in completed_tasks:
+        task_id = str(task.get("id") or "")
+        state = knowledge_service.state_for_source(
+            "upload_task",
+            task_id,
+            allow_add=True,
+        )
+        index_info = task.get("index") if isinstance(task.get("index"), dict) else {}
+        core_indexed = (
+            index_info.get("index_status") == "indexed"
+            if index_info
+            else False
+        )
+        if core_indexed and not state["indexed"]:
+            source_file = task.get("source_file") or task.get("file_path")
+            registered = knowledge_service.register_upload_task(
+                task_id=task_id,
+                title=str(source_file or task_id),
+                source_file=str(source_file) if source_file else None,
+                chunk_count=index_info.get("chunk_count"),
+            )
+            task["knowledge"] = registered
+        else:
+            task["knowledge"] = state
+
     return HTMLResponse(
         template.render(
             status=status,
@@ -561,10 +615,8 @@ async def index(
             active_tasks=active_tasks,
             completed_tasks=completed_tasks,
             failed_tasks=failed_tasks,
-            folders={
-                folder: list_folder(folder)
-                for folder in FOLDERS
-            },
+            folders=folders,
+            knowledge_documents=knowledge_service.list_documents(),
             max_upload_mb=MAX_UPLOAD_MB,
             success=request.query_params.get(
                 "success"
@@ -770,6 +822,7 @@ async def delete_file(
     folder: str,
     filename: str,
 ) -> RedirectResponse:
+    """Delete local file only. Knowledge data is never cascade-deleted."""
     if folder not in {
         "ready",
         "failed",
@@ -788,18 +841,28 @@ async def delete_file(
         filename,
     )
 
+    knowledge_doc = knowledge_service.is_filename_indexed(filename)
     if (
         path.exists()
         and path.is_file()
     ):
         path.unlink()
 
+    if knowledge_doc:
+        # Preserve Knowledge; mark local assets missing when source is known.
+        source_ref = knowledge_doc.get("source_ref")
+        source_type = knowledge_doc.get("source_type")
+        if source_ref and source_type:
+            knowledge_service.mark_local_deleted(source_type, source_ref)
+
+    note = f"Файл «{filename}» видалено."
+    if knowledge_doc:
+        note += " Дані в базі знань збережено."
+
     return RedirectResponse(
         url=(
             "/?success="
-            + quote(
-                f"Файл «{filename}» видалено."
-            )
+            + quote(note)
         ),
         status_code=303,
     )
@@ -811,13 +874,26 @@ async def delete_file(
 async def index_task(
     task_id: str,
 ) -> RedirectResponse:
-    ok, message = await call_core_action(
+    ok, message, payload = await call_core_action(
         method="POST",
         endpoint=(
             f"/audio-lab/tasks/"
             f"{task_id}/index"
         ),
     )
+
+    if ok:
+        title = (
+            payload.get("source_file")
+            or payload.get("title")
+            or task_id
+        )
+        knowledge_service.register_upload_task(
+            task_id=task_id,
+            title=str(title),
+            source_file=str(payload.get("source_file") or title),
+            chunk_count=payload.get("chunk_count"),
+        )
 
     parameter = (
         "success"
@@ -840,13 +916,26 @@ async def index_task(
 async def reindex_task(
     task_id: str,
 ) -> RedirectResponse:
-    ok, message = await call_core_action(
+    ok, message, payload = await call_core_action(
         method="POST",
         endpoint=(
             f"/audio-lab/tasks/"
             f"{task_id}/reindex"
         ),
     )
+
+    if ok:
+        title = (
+            payload.get("source_file")
+            or payload.get("title")
+            or task_id
+        )
+        knowledge_service.register_upload_task(
+            task_id=task_id,
+            title=str(title),
+            source_file=str(payload.get("source_file") or title),
+            chunk_count=payload.get("chunk_count"),
+        )
 
     parameter = (
         "success"
@@ -869,13 +958,17 @@ async def reindex_task(
 async def unindex_task(
     task_id: str,
 ) -> RedirectResponse:
-    ok, message = await call_core_action(
+    """Remove from Knowledge only. Local audio/transcripts remain."""
+    ok, message, _payload = await call_core_action(
         method="DELETE",
         endpoint=(
             f"/audio-lab/tasks/"
             f"{task_id}/index"
         ),
     )
+
+    if ok:
+        knowledge_service.remove_by_source("upload_task", task_id)
 
     parameter = (
         "success"

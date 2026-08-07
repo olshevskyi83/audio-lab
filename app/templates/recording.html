@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ session.title }} — Live Recording</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: system-ui, -apple-system, sans-serif;
+            --background: #0f1117;
+            --panel: #191d25;
+            --border: #303744;
+            --text: #f1f4f8;
+            --muted: #929baa;
+            --blue: #537dff;
+            --green: #65d889;
+            --red: #ef7373;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--background);
+            color: var(--text);
+        }
+        main {
+            width: min(980px, calc(100% - 28px));
+            margin: 28px auto 60px;
+        }
+        a { color: #8eadff; }
+        .muted { color: var(--muted); }
+        .panel {
+            margin-top: 16px;
+            padding: 18px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: var(--panel);
+        }
+        h1 { margin: 8px 0 6px; font-size: 28px; }
+        h2 { margin: 0 0 12px; font-size: 18px; }
+        .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 16px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        button, .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 38px;
+            padding: 9px 13px;
+            border: 0;
+            border-radius: 8px;
+            background: var(--blue);
+            color: #fff;
+            font: inherit;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .button.secondary, button.secondary {
+            background: #3a414f;
+        }
+        .button.danger, button.danger {
+            background: #a84646;
+        }
+        button:disabled, .button.disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+        .chunk {
+            padding: 12px 0;
+            border-top: 1px solid var(--border);
+        }
+        .chunk:first-child { border-top: 0; }
+        .chunk-label {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        audio { width: 100%; margin-top: 6px; }
+        pre {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            background: #141820;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            line-height: 1.5;
+            max-height: 420px;
+            overflow: auto;
+        }
+        .ok { color: var(--green); }
+        .notice {
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <p><a href="/#live-recording">← Back to Live Recording</a></p>
+
+    <h1>{{ session.title }}</h1>
+    <div class="meta">
+        <span>Recording status: <strong>{{ session.status }}</strong></span>
+        <span>Date: {{ session.started_at or session.created_at }}</span>
+        <span>Recorded: {{ recorded_label }}</span>
+        {% if session.status == 'completed' %}
+        <span>Wall time: {{ wall_label }}</span>
+        <span>Paused: {{ paused_label }}</span>
+        {% endif %}
+        <span>Audio parts: {{ session.chunk_count }}</span>
+        <span id="knowledge-status-label">
+            {% if session.knowledge.indexed %}
+            Knowledge Base ✓
+            {% else %}
+            Not indexed
+            {% endif %}
+        </span>
+    </div>
+
+    <div class="panel">
+        <h2>Actions</h2>
+        <div class="actions">
+            {% if session.has_recording_transcript or session.has_lesson_txt %}
+            <a class="button secondary" href="/api/live/sessions/{{ session.session_id }}/transcript.txt" target="_blank" rel="noopener">
+                View Transcript
+            </a>
+            <a class="button secondary" href="/api/live/sessions/{{ session.session_id }}/transcript.txt?download=1">
+                Download Transcript
+            </a>
+            {% endif %}
+
+            {% if chunks %}
+            <a class="button secondary" href="#audio-parts">Listen</a>
+            {% endif %}
+
+            {% if not session.knowledge.indexed %}
+            <button
+                id="knowledge-add-btn"
+                class="button"
+                type="button"
+                {% if not session.knowledge.can_add %}disabled{% endif %}
+            >
+                Add to Knowledge
+            </button>
+            {% else %}
+            <button class="button secondary" type="button" disabled>
+                Knowledge Base ✓
+            </button>
+            <button id="knowledge-reindex-btn" class="button secondary" type="button">
+                Reindex
+            </button>
+            <button id="knowledge-remove-btn" class="button danger" type="button">
+                Remove from Knowledge
+            </button>
+            {% endif %}
+
+            {% if session.status in ['completed', 'cancelled', 'failed'] %}
+            <button
+                id="delete-btn"
+                class="button danger"
+                type="button"
+                data-indexed="{{ '1' if session.knowledge.indexed else '0' }}"
+            >
+                Delete Recording
+            </button>
+            {% endif %}
+        </div>
+        <p class="notice" id="knowledge-note">
+            Knowledge and local recording assets are independent.
+            Delete Recording never removes Knowledge.
+        </p>
+        <p class="notice" id="action-message"></p>
+    </div>
+
+    <div class="panel" id="audio-parts">
+        <h2>Audio parts</h2>
+        {% if chunks %}
+            {% for chunk in chunks %}
+            <div class="chunk">
+                <div class="chunk-label">
+                    #{{ chunk.chunk_index }}
+                    · {{ chunk.range_label }}
+                    · {{ chunk.status }}
+                </div>
+                {% if chunk.play_url %}
+                <audio controls preload="none" src="{{ chunk.play_url }}"></audio>
+                {% else %}
+                <p class="muted">Audio file unavailable</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="muted">No stored audio parts.</p>
+        {% endif %}
+    </div>
+
+    <div class="panel">
+        <h2>Recording transcript</h2>
+        {% if transcript %}
+        <pre>{{ transcript }}</pre>
+        {% else %}
+        <p class="muted">Transcript is not assembled yet.</p>
+        {% endif %}
+    </div>
+</main>
+
+<script>
+    const sessionId = "{{ session.session_id }}";
+    const deleteBtn = document.getElementById("delete-btn");
+    const addBtn = document.getElementById("knowledge-add-btn");
+    const reindexBtn = document.getElementById("knowledge-reindex-btn");
+    const removeBtn = document.getElementById("knowledge-remove-btn");
+    const message = document.getElementById("action-message");
+
+    const INDEXED_DELETE_CONFIRM =
+        "This recording is indexed in the Knowledge Base.\n"
+        + "Audio and local transcription will be removed.\n"
+        + "Knowledge Base data will remain.\n"
+        + "Continue?";
+    const NORMAL_DELETE_CONFIRM =
+        "Delete this recording? Local audio and transcript will be removed.";
+    const REMOVE_KNOWLEDGE_CONFIRM =
+        "Remove this recording from the Knowledge Base?\n"
+        + "Local audio and transcripts will remain.";
+
+    async function api(url, options) {
+        const response = await fetch(url, options || {});
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload.detail || ("HTTP " + response.status));
+        }
+        return payload;
+    }
+
+    if (addBtn) {
+        addBtn.addEventListener("click", async () => {
+            addBtn.disabled = true;
+            try {
+                await api(
+                    "/api/live/sessions/" + encodeURIComponent(sessionId) + "/knowledge",
+                    { method: "POST" }
+                );
+                window.location.reload();
+            } catch (error) {
+                message.textContent = String(error.message || error);
+                addBtn.disabled = false;
+            }
+        });
+    }
+
+    if (reindexBtn) {
+        reindexBtn.addEventListener("click", async () => {
+            reindexBtn.disabled = true;
+            try {
+                await api(
+                    "/api/live/sessions/"
+                        + encodeURIComponent(sessionId)
+                        + "/knowledge/reindex",
+                    { method: "POST" }
+                );
+                message.textContent = "Reindexed in Knowledge Base.";
+                reindexBtn.disabled = false;
+            } catch (error) {
+                message.textContent = String(error.message || error);
+                reindexBtn.disabled = false;
+            }
+        });
+    }
+
+    if (removeBtn) {
+        removeBtn.addEventListener("click", async () => {
+            if (!window.confirm(REMOVE_KNOWLEDGE_CONFIRM)) {
+                return;
+            }
+            removeBtn.disabled = true;
+            try {
+                await api(
+                    "/api/live/sessions/" + encodeURIComponent(sessionId) + "/knowledge",
+                    { method: "DELETE" }
+                );
+                window.location.reload();
+            } catch (error) {
+                message.textContent = String(error.message || error);
+                removeBtn.disabled = false;
+            }
+        });
+    }
+
+    if (deleteBtn) {
+        deleteBtn.addEventListener("click", async () => {
+            const indexed = deleteBtn.dataset.indexed === "1";
+            const confirmText = indexed
+                ? INDEXED_DELETE_CONFIRM
+                : NORMAL_DELETE_CONFIRM;
+            if (!window.confirm(confirmText)) {
+                return;
+            }
+            deleteBtn.disabled = true;
+            try {
+                await api(
+                    "/api/live/sessions/" + encodeURIComponent(sessionId),
+                    { method: "DELETE" }
+                );
+                window.location.href = "/#live-recording";
+            } catch (error) {
+                message.textContent = String(error.message || error);
+                deleteBtn.disabled = false;
+            }
+        });
+    }
+</script>
+</body>
+</html>

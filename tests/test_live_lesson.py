@@ -117,6 +117,12 @@ def lesson_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("AUDIO_LAB_PUBLIC_URL", "http://lab.test")
 
     settings = LiveLessonSettings()
+    from app.knowledge.registry import KnowledgeRegistry
+    from app.knowledge.service import KnowledgeService
+
+    knowledge = KnowledgeService(
+        registry=KnowledgeRegistry(audio_root / "knowledge" / "registry.json")
+    )
     store = SessionStore(settings.sessions_root)
     capture = FakeCapture()
     core = FakeCore()
@@ -125,6 +131,7 @@ def lesson_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         store=store,
         capture_client=capture,  # type: ignore[arg-type]
         core_client=core,  # type: ignore[arg-type]
+        knowledge=knowledge,
     )
     service.ensure_ready()
     return service, store, capture, core, settings

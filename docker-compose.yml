@@ -11,6 +11,7 @@ services:
       CORE_URL: http://ai-gateway:8080
       MAX_UPLOAD_MB: 2048
       LIVE_SESSIONS_ROOT: /remote/Audio/sessions
+      KNOWLEDGE_REGISTRY_PATH: /remote/Audio/knowledge/registry.json
       MAC_CAPTURE_AGENT_URL: ${MAC_CAPTURE_AGENT_URL:-http://host.docker.internal:8011}
       MAC_CAPTURE_AGENT_TOKEN: ${MAC_CAPTURE_AGENT_TOKEN:-}
       LIVE_UPLOAD_TOKEN: ${LIVE_UPLOAD_TOKEN:-}

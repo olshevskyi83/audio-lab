@@ -116,7 +116,7 @@ class LessonSession(BaseModel):
         now = utc_now_iso()
         return cls(
             session_id=session_id or str(uuid4()),
-            title=title.strip() or "Untitled lesson",
+            title=title.strip() or "Untitled recording",
             language=(language or "auto").strip() or "auto",
             status=SessionStatus.CREATED,
             created_at=now,
@@ -193,8 +193,11 @@ class LessonSession(BaseModel):
                 (utc_now() - pause_started).total_seconds(),
             )
 
+        has_transcript = bool(self.lesson_txt_path)
         return {
             "session_id": self.session_id,
+            "recording_id": self.session_id,
+            "resource_type": "recording",
             "title": self.title,
             "language": self.language,
             "status": self.status.value,
@@ -212,13 +215,18 @@ class LessonSession(BaseModel):
             "failed_chunk_count": failed,
             "error": self.error,
             "lesson_txt_path": self.lesson_txt_path,
-            "has_lesson_txt": bool(self.lesson_txt_path),
-            # Knowledge indexing is not implemented for live lessons yet.
+            "has_lesson_txt": has_transcript,
+            "has_recording_transcript": has_transcript,
             "knowledge": {
-                "status": "coming_next",
-                "available": False,
+                "status": "not_indexed",
+                "available": True,
                 "indexed": False,
-                "message": "Індексація уроків у базу знань з’явиться наступним кроком",
+                "knowledge_id": None,
+                "document_id": None,
+                "message": "Not indexed",
+                "can_add": True,
+                "can_reindex": False,
+                "can_remove": False,
             },
             "chunks": chunks,
         }

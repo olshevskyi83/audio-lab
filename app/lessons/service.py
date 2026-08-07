@@ -7,6 +7,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from app.knowledge.models import KnowledgeSourceType
+from app.knowledge.service import KnowledgeError, KnowledgeService, knowledge_service as default_knowledge
 from app.lessons.assembly import assemble_from_texts
 from app.lessons.capture_client import CaptureAgentClient, CaptureAgentError
 from app.lessons.config import LiveLessonSettings, settings as default_settings
@@ -40,9 +42,11 @@ class LessonService:
         store: SessionStore | None = None,
         capture_client: CaptureAgentClient | None = None,
         core_client: CoreTaskClient | None = None,
+        knowledge: KnowledgeService | None = None,
     ) -> None:
         self.settings = settings or default_settings
         self.store = store or SessionStore(self.settings.sessions_root)
+        self.knowledge = knowledge or default_knowledge
         self.capture = capture_client or CaptureAgentClient(
             base_url=self.settings.mac_capture_agent_url,
             token=self.settings.mac_capture_agent_token,
@@ -55,6 +59,7 @@ class LessonService:
 
     def ensure_ready(self) -> None:
         self.store.ensure_root()
+        self.knowledge.ensure_ready()
         processing = self.settings.audio_root / "processing"
         processing.mkdir(parents=True, exist_ok=True)
 
@@ -104,7 +109,19 @@ class LessonService:
     def _public(self, session) -> dict[str, Any]:
         session.refresh_durations()
         payload = session.to_public_dict()
-        payload["has_lesson_txt"] = self.store.has_lesson_txt(session.session_id)
+        has_transcript = self.store.has_lesson_txt(session.session_id)
+        payload["has_lesson_txt"] = has_transcript
+        payload["has_recording_transcript"] = has_transcript
+        allow_add = session.status == SessionStatus.COMPLETED and has_transcript
+        knowledge = self.knowledge.state_for_source(
+            KnowledgeSourceType.LIVE_RECORDING,
+            session.session_id,
+            allow_add=allow_add,
+        )
+        if session.status != SessionStatus.COMPLETED:
+            knowledge["can_add"] = False
+            knowledge["available"] = knowledge["indexed"]
+        payload["knowledge"] = knowledge
         return payload
 
     async def list_sessions(self, *, limit: int = 50) -> list[dict[str, Any]]:
@@ -117,6 +134,7 @@ class LessonService:
         return self._public(self._load(session_id))
 
     async def delete_lesson(self, session_id: str) -> dict[str, Any]:
+        """Delete local recording assets only. Never removes Knowledge data."""
         async with self._lock:
             session = self._load(session_id)
             if session.status not in {
@@ -125,19 +143,92 @@ class LessonService:
                 SessionStatus.FAILED,
             }:
                 raise LessonError(
-                    "Cannot delete an in-progress live lesson; cancel first",
+                    "Cannot delete an in-progress live recording; cancel first",
                     status_code=409,
                 )
+            knowledge_before = self.knowledge.state_for_source(
+                KnowledgeSourceType.LIVE_RECORDING,
+                session_id,
+                allow_add=False,
+            )
             try:
                 self.store.delete_session(session_id)
             except ValueError as exc:
                 raise LessonError(str(exc), status_code=400) from exc
             except FileNotFoundError as exc:
-                raise LessonError("Session not found", status_code=404) from exc
+                raise LessonError("Recording not found", status_code=404) from exc
+
+            preserved = self.knowledge.mark_local_deleted(
+                KnowledgeSourceType.LIVE_RECORDING,
+                session_id,
+            )
             return {
                 "session_id": session_id,
+                "recording_id": session_id,
                 "deleted": True,
+                "local_assets_deleted": True,
+                "knowledge_removed": False,
+                "knowledge_preserved": bool(preserved),
+                "knowledge_id": (
+                    knowledge_before.get("knowledge_id")
+                    if knowledge_before.get("indexed")
+                    else None
+                ),
             }
+
+    async def add_to_knowledge(self, session_id: str) -> dict[str, Any]:
+        session = self._load(session_id)
+        if session.status != SessionStatus.COMPLETED:
+            raise LessonError(
+                "Only completed recordings can be added to Knowledge",
+                status_code=409,
+            )
+        if not self.store.has_lesson_txt(session_id):
+            raise LessonError(
+                "Recording transcript is not ready yet",
+                status_code=409,
+            )
+        doc = self.knowledge.add_for_live_recording(
+            session_id=session_id,
+            title=session.title,
+        )
+        payload = self._public(session)
+        payload["knowledge_document"] = doc
+        return payload
+
+    async def reindex_knowledge(self, session_id: str) -> dict[str, Any]:
+        session = self._load(session_id)
+        if session.status != SessionStatus.COMPLETED:
+            raise LessonError(
+                "Only completed recordings can be reindexed",
+                status_code=409,
+            )
+        try:
+            doc = self.knowledge.reindex_for_live_recording(
+                session_id=session_id,
+                title=session.title,
+            )
+        except KnowledgeError as exc:
+            raise LessonError(str(exc), status_code=exc.status_code) from exc
+        payload = self._public(session)
+        payload["knowledge_document"] = doc
+        return payload
+
+    async def remove_from_knowledge(self, session_id: str) -> dict[str, Any]:
+        """Remove Knowledge registration only. Local recording remains."""
+        session = self._load(session_id)
+        removed = self.knowledge.remove_by_source(
+            KnowledgeSourceType.LIVE_RECORDING,
+            session_id,
+        )
+        if removed is None:
+            raise LessonError(
+                "Recording is not in the Knowledge Base",
+                status_code=404,
+            )
+        payload = self._public(session)
+        payload["knowledge_removed"] = removed
+        return payload
 
     async def get_active_session(self) -> dict[str, Any] | None:
         for session in self.store.list_sessions():
@@ -527,6 +618,7 @@ class LessonService:
             "source": "live_lesson",
             "original_filename": chunk.filename,
             "session_id": session.session_id,
+            "recording_title": session.title,
             "lesson_title": session.title,
             "chunk_index": chunk.chunk_index,
             "start_offset_seconds": chunk.start_offset_seconds,

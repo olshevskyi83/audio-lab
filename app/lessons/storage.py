@@ -10,7 +10,7 @@ from app.lessons.models import LessonSession
 
 
 class SessionStore:
-    """Filesystem-backed lesson session persistence."""
+    """Filesystem-backed live recording session persistence."""
 
     def __init__(self, root: Path) -> None:
         self.root = root.resolve()

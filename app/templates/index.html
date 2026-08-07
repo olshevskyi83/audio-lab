@@ -923,7 +923,7 @@
         <h1>Audio Lab</h1>
 
         <p class="subtitle">
-            Транскрипція, база знань, Qdrant і локальний RAG
+            Transcription, Knowledge Base, and local RAG
         </p>
     </header>
 
@@ -1151,12 +1151,12 @@
         </div>
     </section>
 
-    <section class="panel" id="live-lesson">
-        <h2>LIVE LESSON</h2>
+    <section class="panel" id="live-recording">
+        <h2>LIVE RECORDING</h2>
 
         <p class="muted">
             Запис лише системного аудіо macOS (ScreenCaptureKit).
-            Мікрофон не використовується. Чанки транскрибуються під час уроку.
+            Мікрофон не використовується. Чанки транскрибуються під час запису.
         </p>
 
         <div
@@ -1169,12 +1169,12 @@
         <div class="live-lesson-grid">
             <div class="input-card">
                 <div class="live-form-row">
-                    <label for="live-title">Назва уроку</label>
+                    <label for="live-title">Recording title</label>
                     <input
                         id="live-title"
                         type="text"
                         maxlength="200"
-                        placeholder="Наприклад: Zoom — Python lesson"
+                        placeholder="e.g. Zoom lecture, podcast, meeting notes"
                     >
                 </div>
 
@@ -1191,7 +1191,7 @@
 
                 <div class="live-controls">
                     <button id="live-start" type="button">
-                        Start Lesson
+                        Start Recording
                     </button>
                     <button
                         id="live-pause"
@@ -1241,8 +1241,8 @@
                     id="live-empty"
                     class="muted"
                 >
-                    Немає активного уроку. Натисніть Start Lesson.
-                    Після Stop урок з’явиться в Recent Lessons.
+                    No active recording. Press Start Recording.
+                    After Stop it appears in Recent Recordings.
                 </div>
 
                 <div
@@ -1286,9 +1286,9 @@
         </div>
 
         <div class="live-recent">
-            <h3>Recent Lessons</h3>
+            <h3>Recent Recordings</h3>
             <p class="muted" style="margin-bottom: 0;">
-                Натисніть урок, щоб відкрити деталі, аудіо та транскрипцію.
+                Click a recording to open details, audio, and transcript.
             </p>
             <div
                 id="live-recent-list"
@@ -1297,11 +1297,53 @@
         </div>
     </section>
 
+    <section class="panel" id="knowledge-documents">
+        <h2>Knowledge Base</h2>
+        <p class="muted">
+            Indexed documents remain manageable even if local audio was deleted.
+            Remove from Knowledge never deletes local files.
+        </p>
+        {% if knowledge_documents %}
+        <div class="task-list">
+            {% for doc in knowledge_documents %}
+            <article class="task">
+                <div class="task-info">
+                    <div class="filename" title="{{ doc.knowledge_id }}">
+                        {{ doc.title }}
+                    </div>
+                    <div class="task-meta">
+                        <span class="badge indexed">Knowledge Base ✓</span>
+                        <span>{{ doc.source_type }}</span>
+                        {% if not doc.local_assets_present %}
+                        <span class="badge">knowledge-only</span>
+                        {% endif %}
+                        <span class="muted">id: {{ doc.knowledge_id[:8] }}…</span>
+                    </div>
+                </div>
+                <div class="task-actions">
+                    <form
+                        method="post"
+                        action="/api/knowledge/documents/{{ doc.knowledge_id }}/remove-form"
+                        onsubmit="return confirm('Remove this recording from the Knowledge Base?\nLocal audio and transcripts will remain.')"
+                    >
+                        <button class="danger-button" type="submit">
+                            Remove from Knowledge
+                        </button>
+                    </form>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty">No Knowledge documents yet.</p>
+        {% endif %}
+    </section>
+
     <section class="panel">
         <h2>Запитати базу знань</h2>
 
         <p class="muted">
-            Qdrant знайде релевантні транскрипції,
+            Knowledge Base знайде релевантні транскрипції,
             а Qwen сформує відповідь лише на основі джерел.
         </p>
 
@@ -1577,7 +1619,7 @@
                         <span
                             class="badge {{ index_status }}"
                         >
-                            Qdrant:
+                            Knowledge:
                             {{ index_status }}
                         </span>
 
@@ -1647,7 +1689,7 @@
                         action="/tasks/{{ task.id }}/index"
                     >
                         <button type="submit">
-                            Додати в Qdrant
+                            Add to Knowledge
                         </button>
                     </form>
                     {% else %}
@@ -1659,7 +1701,7 @@
                             class="secondary"
                             type="submit"
                         >
-                            Переіндексувати
+                            Reindex
                         </button>
                     </form>
 
@@ -1668,7 +1710,7 @@
                         action="/tasks/{{ task.id }}/unindex"
                         onsubmit="
                             return confirm(
-                                'Видалити транскрипцію з Qdrant?'
+                                'Remove this recording from the Knowledge Base?\nLocal audio and transcripts will remain.'
                             )
                         "
                     >
@@ -1676,7 +1718,7 @@
                             class="danger-button"
                             type="submit"
                         >
-                            Видалити з Qdrant
+                            Remove from Knowledge
                         </button>
                     </form>
                     {% endif %}
@@ -1791,17 +1833,17 @@
                             <form
                                 method="post"
                                 action="/delete/archive/{{ file.name }}"
-                                onsubmit="
-                                    return confirm(
-                                        'Видалити аудіофайл?'
-                                    )
-                                "
+                                onsubmit="return confirm(this.dataset.confirmMessage)"
+                                data-confirm-message="{% if file.knowledge_indexed %}This recording is indexed in the Knowledge Base.
+Audio and local transcription will be removed.
+Knowledge Base data will remain.
+Continue?{% else %}Delete local audio file? Knowledge Base data is never cascade-deleted.{% endif %}"
                             >
                                 <button
                                     class="danger-button"
                                     type="submit"
                                 >
-                                    Видалити
+                                    Delete Recording
                                 </button>
                             </form>
                         </div>
@@ -2786,7 +2828,7 @@
         liveSession = session;
         liveEmpty.style.display = "none";
         liveActive.style.display = "block";
-        liveSessionTitle.textContent = session.title || "Lesson";
+        liveSessionTitle.textContent = session.title || "Recording";
         setWaveState(session.status);
         liveRecordedLine.textContent = "Записано: "
             + formatLiveDuration(session.captured_duration_seconds);
@@ -2809,12 +2851,12 @@
         updateLiveControls(session);
     }
 
-    function renderRecentLessons(sessions) {
+    function renderRecentRecordings(sessions) {
         liveRecentList.innerHTML = "";
         if (!sessions || sessions.length === 0) {
             const empty = document.createElement("p");
             empty.className = "muted";
-            empty.textContent = "Немає уроків.";
+            empty.textContent = "No recordings.";
             liveRecentList.appendChild(empty);
             return;
         }
@@ -2822,7 +2864,7 @@
         sessions.forEach((session) => {
             const item = document.createElement("a");
             item.className = "live-recent-item";
-            item.href = "/live/sessions/"
+            item.href = "/live/recordings/"
                 + encodeURIComponent(session.session_id);
 
             const title = document.createElement("div");
@@ -2902,10 +2944,10 @@
         );
     }
 
-    async function refreshRecentLessons() {
+    async function refreshRecentRecordings() {
         try {
             const payload = await liveFetch("/api/live/sessions?limit=10");
-            renderRecentLessons(payload.sessions || []);
+            renderRecentRecordings(payload.sessions || []);
         } catch (_error) {
             // keep previous list
         }
@@ -2936,7 +2978,7 @@
             renderLiveSession(null);
         }
 
-        await refreshRecentLessons();
+        await refreshRecentRecordings();
     }
 
     async function liveAction(url, body, options) {
@@ -2959,16 +3001,16 @@
                 renderLiveSession(null);
                 setLiveMessage(
                     payload.status === "processing"
-                        ? "Урок зупинено. Транскрипція завершується в Recent Lessons."
-                        : "Урок збережено в Recent Lessons."
+                        ? "Recording stopped. Transcription continues in Recent Recordings."
+                        : "Recording saved in Recent Recordings."
                 );
             } else if (payload.status === "cancelled") {
                 renderLiveSession(null);
-                setLiveMessage("Урок скасовано.");
+                setLiveMessage("Recording cancelled.");
             } else {
                 renderLiveSession(payload);
             }
-            await refreshRecentLessons();
+            await refreshRecentRecordings();
         } catch (error) {
             setLiveMessage(error.message, true);
         } finally {
@@ -2981,7 +3023,7 @@
     liveStart.addEventListener("click", async () => {
         const title = (liveTitle.value || "").trim();
         if (!title) {
-            setLiveMessage("Вкажіть назву уроку.", true);
+            setLiveMessage("Enter a recording title.", true);
             liveTitle.focus();
             return;
         }
@@ -3022,7 +3064,7 @@
 
     liveCancel.addEventListener("click", async () => {
         if (!liveSession) return;
-        if (!window.confirm("Скасувати поточний урок?")) {
+        if (!window.confirm("Cancel the current recording?")) {
             return;
         }
         await liveAction(

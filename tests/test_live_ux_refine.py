@@ -91,11 +91,11 @@ def test_audio_preserved_and_servable_after_transcription(api_client):
     detail = client.get(f"/live/sessions/{sid}")
     assert detail.status_code == 200
     assert "00:00:00–00:10:00" in detail.text or "00:00–00:10:00" in detail.text
-    assert "Додати в базу знань" in detail.text
-    assert "disabled" in detail.text
-    assert "Переглянути транскрипцію" in detail.text
-    assert "Завантажити TXT" in detail.text
-    assert "Видалити урок" in detail.text
+    assert "Add to Knowledge" in detail.text
+    assert "View Transcript" in detail.text or "Переглянути транскрипцію" in detail.text
+    assert "Download Transcript" in detail.text or "Завантажити TXT" in detail.text
+    assert "Delete Recording" in detail.text
+    assert "Видалити урок" not in detail.text
 
 
 def test_stop_moves_lesson_to_recent_list(api_client):

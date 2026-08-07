@@ -1,4 +1,4 @@
-"""Live Lesson session management for Audio Lab."""
+"""Live recording session management for Audio Lab."""
 
 from app.lessons.models import ChunkStatus, LessonChunk, LessonSession, SessionStatus
 from app.lessons.service import LessonService

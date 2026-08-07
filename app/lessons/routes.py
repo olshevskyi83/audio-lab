@@ -3,21 +3,24 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, File, Form, Header, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
-from app.lessons.assembly import format_timestamp
 from app.lessons.auth import require_live_token
 from app.lessons.config import settings
 from app.lessons.service import LessonError, lesson_service
 
 
-router = APIRouter(prefix="/api/live", tags=["live-lesson"])
+router = APIRouter(prefix="/api/live", tags=["live-recording"])
 
 
-class StartLessonRequest(BaseModel):
+class StartRecordingRequest(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     language: str = Field(default="auto", max_length=32)
+
+
+# Backward-compatible alias
+StartLessonRequest = StartRecordingRequest
 
 
 def _http_error(exc: LessonError) -> HTTPException:
@@ -34,13 +37,17 @@ async def list_live_sessions(
     limit: int = Query(default=10, ge=1, le=100),
 ) -> dict[str, Any]:
     sessions = await lesson_service.list_sessions(limit=limit)
-    return {"sessions": sessions, "total": len(sessions)}
+    return {
+        "sessions": sessions,
+        "recordings": sessions,
+        "total": len(sessions),
+    }
 
 
 @router.get("/sessions/active")
 async def get_active_live_session() -> dict[str, Any]:
     session = await lesson_service.get_active_session()
-    return {"session": session}
+    return {"session": session, "recording": session}
 
 
 @router.get("/sessions/{session_id}")
@@ -53,6 +60,7 @@ async def get_live_session(session_id: str) -> dict[str, Any]:
 
 @router.delete("/sessions/{session_id}")
 async def delete_live_session(session_id: str) -> dict[str, Any]:
+    """Delete local recording assets only. Knowledge is never cascade-deleted."""
     try:
         return await lesson_service.delete_lesson(session_id)
     except LessonError as exc:
@@ -60,7 +68,7 @@ async def delete_live_session(session_id: str) -> dict[str, Any]:
 
 
 @router.post("/sessions/start")
-async def start_live_session(body: StartLessonRequest) -> dict[str, Any]:
+async def start_live_session(body: StartRecordingRequest) -> dict[str, Any]:
     try:
         return await lesson_service.start_lesson(
             title=body.title,
@@ -110,6 +118,31 @@ async def poll_live_session(session_id: str) -> dict[str, Any]:
         raise _http_error(exc) from exc
 
 
+@router.post("/sessions/{session_id}/knowledge")
+async def add_recording_to_knowledge(session_id: str) -> dict[str, Any]:
+    try:
+        return await lesson_service.add_to_knowledge(session_id)
+    except LessonError as exc:
+        raise _http_error(exc) from exc
+
+
+@router.post("/sessions/{session_id}/knowledge/reindex")
+async def reindex_recording_knowledge(session_id: str) -> dict[str, Any]:
+    try:
+        return await lesson_service.reindex_knowledge(session_id)
+    except LessonError as exc:
+        raise _http_error(exc) from exc
+
+
+@router.delete("/sessions/{session_id}/knowledge")
+async def remove_recording_from_knowledge(session_id: str) -> dict[str, Any]:
+    """Remove from Knowledge only. Local recording assets remain."""
+    try:
+        return await lesson_service.remove_from_knowledge(session_id)
+    except LessonError as exc:
+        raise _http_error(exc) from exc
+
+
 @router.get("/sessions/{session_id}/audio/{filename}")
 async def download_live_chunk_audio(
     session_id: str,
@@ -129,18 +162,15 @@ async def download_live_chunk_audio(
     )
 
 
-@router.get(
-    "/sessions/{session_id}/lesson.txt",
-    response_class=PlainTextResponse,
-)
-async def download_lesson_txt(
+async def _recording_transcript_response(
     session_id: str,
-    download: bool = Query(default=False),
+    *,
+    download: bool,
 ) -> PlainTextResponse:
     try:
         session = lesson_service.store.load(session_id)
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail="Session not found") from exc
+        raise HTTPException(status_code=404, detail="Recording not found") from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -150,13 +180,37 @@ async def download_lesson_txt(
         path = lesson_service.store.lesson_txt_path(session_id)
 
     disposition = "attachment" if download else "inline"
+    download_name = "recording.txt" if download else "lesson.txt"
     return PlainTextResponse(
         path.read_text(encoding="utf-8", errors="replace"),
         media_type="text/plain; charset=utf-8",
         headers={
-            "Content-Disposition": f'{disposition}; filename="lesson.txt"',
+            "Content-Disposition": f'{disposition}; filename="{download_name}"',
         },
     )
+
+
+@router.get(
+    "/sessions/{session_id}/transcript.txt",
+    response_class=PlainTextResponse,
+)
+async def download_recording_transcript(
+    session_id: str,
+    download: bool = Query(default=False),
+) -> PlainTextResponse:
+    return await _recording_transcript_response(session_id, download=download)
+
+
+@router.get(
+    "/sessions/{session_id}/lesson.txt",
+    response_class=PlainTextResponse,
+)
+async def download_lesson_txt(
+    session_id: str,
+    download: bool = Query(default=False),
+) -> PlainTextResponse:
+    """Compatibility path; prefer /transcript.txt in new clients."""
+    return await _recording_transcript_response(session_id, download=download)
 
 
 @router.post("/sessions/{session_id}/chunks")

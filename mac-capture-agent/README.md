@@ -1,6 +1,6 @@
 # Mac Capture Agent
 
-Local macOS system-audio capture service for Audio Lab **Live Lesson** mode.
+Local macOS system-audio capture service for Audio Lab **Live Recording** mode.
 
 - Captures **system output only** via ScreenCaptureKit (no microphone)
 - Silence / min / max chunking

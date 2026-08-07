@@ -1,6 +1,24 @@
-# Live Lesson Mode
+# Live Recording Mode
 
 Additive feature for Audio Lab: capture macOS **system audio only**, chunk live, transcribe via Homelab Core while recording continues.
+
+Audio Lab is a generic **Audio Knowledge Capture** system (lectures, podcasts, meetings, voice notes — not lesson-specific).
+
+## Two independent layers
+
+**Layer A — Local assets**
+
+- `session.json`, audio chunks, transcripts, assembled `lesson.txt` (internal filename)
+
+**Layer B — Knowledge**
+
+- Stable `knowledge_id` / `document_id`
+- Knowledge registry + (when wired) Qdrant vectors
+
+Deletion never cascades between layers:
+
+- **Delete Recording** → local assets only; Knowledge remains
+- **Remove from Knowledge** → Knowledge only; local audio/transcripts remain
 
 ## Architecture
 
@@ -16,23 +34,24 @@ Browser UI  →  Audio Lab (session owner)  →  Mac Capture Agent :8011
 - Whisper Mac Agent remains on **8010** (unchanged, separate process)
 - Live Capture Agent on **8011**
 - Sessions stored under `LIVE_SESSIONS_ROOT` (default `/remote/Audio/sessions/<session_id>/`)
+- Knowledge registry: `KNOWLEDGE_REGISTRY_PATH` (default `/remote/Audio/knowledge/registry.json`)
 
 ### Session layout
 
 ```text
 sessions/<session_id>/
   session.json
-  lesson.txt
+  lesson.txt          # assembled recording transcript (compat filename)
   audio/chunk_0001.wav
   transcripts/chunk_0001.txt
 ```
 
-Chunk audio is **copied** into `/remote/Audio/processing/` before Core enqueue because Homelab Core archives (moves) `file_path` after transcription. Canonical lesson audio stays under `sessions/`.
+Chunk audio is **copied** into `/remote/Audio/processing/` before Core enqueue because Homelab Core archives (moves) `file_path` after transcription. Canonical recording audio stays under `sessions/`.
 
 ## Extension points (not implemented yet)
 
-- Qdrant indexing of full lessons
-- LLM summary / vocabulary / grammar
+- Full Core/Qdrant vector sync for live recordings (local Knowledge registry is live)
+- LLM summary / notes
 - Speaker diarization
 - Zoom-only application audio filter
 - Microphone capture
@@ -65,7 +84,7 @@ On Linux Docker, prefer the Mac’s LAN/Tailscale IP over `host.docker.internal`
 
 ## Mac installation / start
 
-On the Mac that plays Zoom/system audio:
+On the Mac that plays system audio:
 
 ```bash
 # clone or sync this repo, then:
@@ -78,54 +97,12 @@ export MAC_CAPTURE_AGENT_TOKEN='<same-shared-secret>'
 export LIVE_CHUNK_SILENCE_SECONDS=5
 export LIVE_CHUNK_MIN_SECONDS=20
 export LIVE_CHUNK_MAX_SECONDS=600
-
-./.build/release/mac-capture-agent
 ```
 
-### Required macOS permission
+## UI flow
 
-**System Settings → Privacy & Security → Screen & System Audio Recording**
-
-Enable access for `mac-capture-agent` (or the Terminal app if you launch via `swift run`). Restart the agent after granting permission.
-
-## Manual acceptance test
-
-1. Start Homelab Core + Audio Lab on the server.
-2. Start `mac-capture-agent` on the Mac; confirm Audio Lab LIVE LESSON shows **Capture Agent: online**.
-3. Play system audio (Zoom lesson or any speaker output).
-4. In Audio Lab → **LIVE LESSON**: set title + language → **Start Lesson**.
-5. Confirm status **Recording**, elapsed/captured timers move, chunks appear as silence/max boundaries hit.
-6. **Pause** → status **Paused**, capture stops, current chunk finalized/uploaded.
-7. Wait (pause gap) → **Resume** → same `session_id`, new chunk with larger `start_offset` (gap preserved).
-8. **Stop** → status **Processing** then **Completed**.
-9. Open `/api/live/sessions/<id>/lesson.txt` and confirm:
-   - chronological chunk order
-   - `[PAUSE / no captured audio]` between resumed segments
-   - transcript text for completed chunks
-
-## API summary
-
-| Method | Path | Notes |
-|--------|------|-------|
-| GET | `/api/live/agent` | Capture agent reachability |
-| GET | `/api/live/sessions/active` | Current non-terminal session |
-| POST | `/api/live/sessions/start` | `{title, language}` |
-| POST | `/api/live/sessions/{id}/pause\|resume\|stop\|cancel` | Controls |
-| POST | `/api/live/sessions/{id}/poll` | Refresh transcription state |
-| GET | `/api/live/sessions/{id}/lesson.txt` | Assembled transcript |
-| POST | `/api/live/sessions/{id}/chunks` | Agent upload (Bearer token) |
-
-## Tests
-
-```bash
-cd /home/homelabuser/docker/ai/audio-lab
-python3 -m venv .venv
-.venv/bin/pip install -r requirements-dev.txt
-.venv/bin/pytest -q
-```
-
-Swift (on macOS, Command Line Tools / SwiftPM — full Xcode not required):
-
-```bash
-cd mac-capture-agent && swift test && swift build -c release
-```
+1. Start Mac capture agent; Audio Lab **LIVE RECORDING** shows Capture Agent online.
+2. Set **Recording title** + language → **Start Recording**.
+3. Pause / Resume / Stop as needed.
+4. After Stop, recording appears under **Recent Recordings** (Processing → Completed).
+5. Open detail: listen to chunks, view/download transcript, Add to Knowledge, or Delete Recording.
