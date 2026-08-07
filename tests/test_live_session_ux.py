@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from tests.test_live_api import api_client  # noqa: F401
-from tests.test_live_lesson import make_wav
+from tests.test_live_lesson import lesson_env, make_wav  # noqa: F401
 
 
 def _start_with_chunk(client, core, *, complete: bool = False):
@@ -194,10 +196,66 @@ def test_index_keeps_completed_lesson_in_ui_contract(api_client):
     assert "Завантажити TXT" in html
     assert "Видалити урок" in html
     assert "Видалити цей урок разом з аудіо та транскрипцією?" in html
+    assert "Записано" in html
+    assert "Пауза" in html
+    assert "Тривалість уроку" in html
+    assert "На паузі" in html
+    assert "updateLiveTimers" in html
+    assert "startLivePauseTicker" in html
     # Critical: do not clear panel just because /active is null.
     assert "isLiveTerminal(liveSession.status)" in html
     assert "/api/live/sessions?limit=10" in html
     assert "deleteLiveLesson" in html
+
+
+@pytest.mark.asyncio
+async def test_pause_exposes_current_pause_timer_fields(lesson_env):
+    service, _, _, _, _ = lesson_env
+    session = await service.start_lesson(title="Timer", language="auto")
+    sid = session["session_id"]
+    paused = await service.pause_lesson(sid)
+    assert paused["status"] == "paused"
+    assert paused["pause_started_at"]
+    assert paused["captured_duration_seconds"] == paused["captured_duration_seconds"]
+    assert "current_pause_seconds" in paused
+    assert paused["current_pause_seconds"] >= 0
+
+    # Captured stays stable across pause refreshes while wall may grow.
+    captured = paused["captured_duration_seconds"]
+    import asyncio
+    await asyncio.sleep(0.05)
+    again = await service.get_session(sid)
+    assert again["status"] == "paused"
+    assert again["captured_duration_seconds"] == captured
+    assert again["wall_duration_seconds"] >= paused["wall_duration_seconds"]
+
+    resumed = await service.resume_lesson(sid)
+    assert resumed["status"] == "recording"
+    assert resumed["pause_started_at"] is None
+    assert resumed["current_pause_seconds"] == 0
+
+
+@pytest.mark.asyncio
+async def test_completed_session_exposes_duration_breakdown(lesson_env):
+    service, store, _, core, _ = lesson_env
+    session = await service.start_lesson(title="Done", language="auto")
+    sid = session["session_id"]
+    await service.accept_chunk(
+        session_id=sid,
+        chunk_index=1,
+        start_offset_seconds=0,
+        end_offset_seconds=30,
+        duration_seconds=30,
+        audio=make_wav(),
+    )
+    task_id = store.load(sid).chunks[0].whisper_task_id
+    core.complete(task_id, "text")
+    await service.poll_session_transcriptions(sid)
+    final = await service.stop_lesson(sid)
+    assert final["status"] == "completed"
+    assert "wall_duration_seconds" in final
+    assert final["captured_duration_seconds"] == 30
+    assert "paused_duration_seconds" in final
 
 
 def test_completion_visible_via_poll_without_reload(api_client):
@@ -210,7 +268,7 @@ def test_completion_visible_via_poll_without_reload(api_client):
     polled = client.post(f"/api/live/sessions/{sid}/poll")
     assert polled.json()["status"] == "completed"
     assert polled.json()["has_lesson_txt"] is True
-    # Same session id remains addressable for the focused panel.
     detail = client.get(f"/api/live/sessions/{sid}")
     assert detail.json()["session_id"] == sid
     assert detail.json()["status"] == "completed"
+

@@ -185,6 +185,14 @@ class LessonSession(BaseModel):
             1 for chunk in self.chunks if chunk.status == ChunkStatus.FAILED
         )
 
+        current_pause_seconds = 0.0
+        if self.pause_started_at and self.status == SessionStatus.PAUSED:
+            pause_started = datetime.fromisoformat(self.pause_started_at)
+            current_pause_seconds = max(
+                0.0,
+                (utc_now() - pause_started).total_seconds(),
+            )
+
         return {
             "session_id": self.session_id,
             "title": self.title,
@@ -196,6 +204,8 @@ class LessonSession(BaseModel):
             "wall_duration_seconds": self.wall_duration_seconds,
             "captured_duration_seconds": self.captured_duration_seconds,
             "paused_duration_seconds": self.paused_duration_seconds,
+            "pause_started_at": self.pause_started_at,
+            "current_pause_seconds": current_pause_seconds,
             "chunk_count": self.chunk_count,
             "transcribed_chunk_count": transcribed,
             "pending_chunk_count": pending,
