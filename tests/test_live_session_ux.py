@@ -187,25 +187,19 @@ def test_cannot_delete_in_progress_lesson(api_client):
 
 
 def test_index_keeps_completed_lesson_in_ui_contract(api_client):
-    """UI must keep focused terminal sessions and list recent lessons."""
+    """UI keeps Recent Lessons compact and active panel simple."""
     client, _, _, _ = api_client
     html = client.get("/").text
-    assert "Recent lessons" in html
+    assert "Recent Lessons" in html
     assert "live-recent-list" in html
-    assert "Переглянути транскрипцію" in html
-    assert "Завантажити TXT" in html
-    assert "Видалити урок" in html
-    assert "Видалити цей урок разом з аудіо та транскрипцією?" in html
-    assert "Записано" in html
-    assert "Пауза" in html
-    assert "Тривалість уроку" in html
-    assert "На паузі" in html
-    assert "updateLiveTimers" in html
-    assert "startLivePauseTicker" in html
-    # Critical: do not clear panel just because /active is null.
-    assert "isLiveTerminal(liveSession.status)" in html
-    assert "/api/live/sessions?limit=10" in html
-    assert "deleteLiveLesson" in html
+    assert "live-wave" in html
+    assert "Записано:" in html
+    assert "Пауза:" in html
+    assert ">Elapsed<" not in html
+    assert ">Chunks<" not in html
+    assert "clearOnStop" in html
+    assert "/live/sessions/" in html
+    assert "Скасувати поточний урок?" in html
 
 
 @pytest.mark.asyncio

@@ -3,9 +3,10 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, File, Form, Header, HTTPException, Query, UploadFile
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
+from app.lessons.assembly import format_timestamp
 from app.lessons.auth import require_live_token
 from app.lessons.config import settings
 from app.lessons.service import LessonError, lesson_service
@@ -109,7 +110,29 @@ async def poll_live_session(session_id: str) -> dict[str, Any]:
         raise _http_error(exc) from exc
 
 
-@router.get("/sessions/{session_id}/lesson.txt", response_class=PlainTextResponse)
+@router.get("/sessions/{session_id}/audio/{filename}")
+async def download_live_chunk_audio(
+    session_id: str,
+    filename: str,
+) -> FileResponse:
+    try:
+        path = lesson_service.store.audio_file_path(session_id, filename)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Audio file not found") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return FileResponse(
+        path,
+        media_type="audio/wav",
+        filename=path.name,
+    )
+
+
+@router.get(
+    "/sessions/{session_id}/lesson.txt",
+    response_class=PlainTextResponse,
+)
 async def download_lesson_txt(
     session_id: str,
     download: bool = Query(default=False),

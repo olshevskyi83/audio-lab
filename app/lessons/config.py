@@ -65,11 +65,11 @@ class LiveLessonSettings:
         )
         self.chunk_max_seconds = _env_float(
             "LIVE_CHUNK_MAX_SECONDS",
-            180.0,
+            600.0,
         )
         self.max_chunk_bytes = _env_int(
             "LIVE_MAX_CHUNK_BYTES",
-            30 * 1024 * 1024,
+            40 * 1024 * 1024,
         )
         self.poll_interval_seconds = _env_float(
             "LIVE_POLL_INTERVAL_SECONDS",

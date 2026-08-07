@@ -17,7 +17,7 @@ public struct AgentConfig: Sendable {
         token: String = "",
         silenceSeconds: Double = 5.0,
         minChunkSeconds: Double = 20.0,
-        maxChunkSeconds: Double = 180.0,
+        maxChunkSeconds: Double = 600.0,
         silenceRmsThreshold: Float = 0.01,
         sampleRate: Int = 16_000,
         uploadTimeoutSeconds: Double = 60.0

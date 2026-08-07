@@ -13,8 +13,9 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel, Field
 
+from app.lessons.assembly import format_timestamp
 from app.lessons.routes import router as live_lesson_router
-from app.lessons.service import lesson_service
+from app.lessons.service import LessonError, lesson_service
 
 
 AUDIO_ROOT = Path(
@@ -423,6 +424,75 @@ async def call_core_action(
             False,
             f"Homelab Core недоступний: {exc}",
         )
+
+
+@app.get(
+    "/live/sessions/{session_id}",
+    response_class=HTMLResponse,
+)
+async def live_lesson_detail(
+    session_id: str,
+) -> HTMLResponse:
+    try:
+        session = await lesson_service.get_session(session_id)
+    except LessonError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=str(exc),
+        ) from exc
+
+    chunks = []
+    for chunk in session.get("chunks") or []:
+        filename = chunk.get("filename")
+        play_url = None
+        if filename:
+            audio_path = (
+                lesson_service.store.session_dir(session_id)
+                / "audio"
+                / Path(filename).name
+            )
+            if audio_path.is_file():
+                play_url = (
+                    f"/api/live/sessions/{session_id}/audio/"
+                    f"{Path(filename).name}"
+                )
+        chunks.append(
+            {
+                **chunk,
+                "range_label": (
+                    f"{format_timestamp(chunk.get('start_offset_seconds', 0))}"
+                    f"–"
+                    f"{format_timestamp(chunk.get('end_offset_seconds', 0))}"
+                ),
+                "play_url": play_url,
+            }
+        )
+
+    transcript = ""
+    lesson_path = lesson_service.store.lesson_txt_path(session_id)
+    if lesson_path.is_file():
+        transcript = lesson_path.read_text(
+            encoding="utf-8",
+            errors="replace",
+        )
+
+    template = templates.get_template("lesson.html")
+    return HTMLResponse(
+        template.render(
+            session=session,
+            chunks=chunks,
+            transcript=transcript,
+            recorded_label=format_timestamp(
+                session.get("captured_duration_seconds", 0)
+            ),
+            wall_label=format_timestamp(
+                session.get("wall_duration_seconds", 0)
+            ),
+            paused_label=format_timestamp(
+                session.get("paused_duration_seconds", 0)
+            ),
+        )
+    )
 
 
 @app.get(

@@ -77,7 +77,7 @@ export MAC_CAPTURE_PORT=8011
 export MAC_CAPTURE_AGENT_TOKEN='<same-shared-secret>'
 export LIVE_CHUNK_SILENCE_SECONDS=5
 export LIVE_CHUNK_MIN_SECONDS=20
-export LIVE_CHUNK_MAX_SECONDS=180
+export LIVE_CHUNK_MAX_SECONDS=600
 
 ./.build/release/mac-capture-agent
 ```

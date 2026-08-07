@@ -217,44 +217,73 @@
         }
 
         .live-status-card {
-            padding: 14px;
+            padding: 16px;
             border-radius: 10px;
             background: var(--panel-soft);
+            min-height: 180px;
         }
 
         .live-status-card .live-title {
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            font-size: 20px;
+        }
+
+        .live-state-line {
+            margin-bottom: 12px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .live-recorded-line {
+            font-size: 22px;
+            font-variant-numeric: tabular-nums;
+            margin: 10px 0 4px;
+        }
+
+        .live-pause-line {
             font-size: 18px;
+            font-variant-numeric: tabular-nums;
+            color: var(--yellow);
+            margin: 6px 0 10px;
         }
 
-        .live-metrics {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 8px;
-            margin: 12px 0;
-        }
-
-        .live-chunk-list {
-            margin-top: 12px;
-            max-height: 280px;
-            overflow: auto;
-            display: grid;
-            gap: 8px;
-        }
-
-        .live-chunk-item {
-            padding: 10px 12px;
-            border-radius: 8px;
-            background: #1b2029;
-            border: 1px solid var(--border);
-            font-size: 13px;
-        }
-
-        .live-chunk-item .chunk-head {
+        .live-wave {
             display: flex;
-            justify-content: space-between;
-            gap: 10px;
-            margin-bottom: 4px;
+            align-items: flex-end;
+            gap: 4px;
+            height: 36px;
+            margin: 12px 0 14px;
+        }
+
+        .live-wave span {
+            width: 5px;
+            border-radius: 999px;
+            background: var(--blue);
+            opacity: 0.35;
+            height: 8px;
+        }
+
+        .live-wave.is-recording span {
+            opacity: 1;
+            animation: live-wave-pulse 1s ease-in-out infinite;
+        }
+
+        .live-wave.is-recording span:nth-child(2) { animation-delay: 0.1s; }
+        .live-wave.is-recording span:nth-child(3) { animation-delay: 0.2s; }
+        .live-wave.is-recording span:nth-child(4) { animation-delay: 0.3s; }
+        .live-wave.is-recording span:nth-child(5) { animation-delay: 0.15s; }
+        .live-wave.is-recording span:nth-child(6) { animation-delay: 0.25s; }
+        .live-wave.is-recording span:nth-child(7) { animation-delay: 0.05s; }
+
+        .live-wave.is-paused span {
+            opacity: 0.25;
+            animation: none;
+            height: 8px !important;
+        }
+
+        @keyframes live-wave-pulse {
+            0%, 100% { height: 8px; opacity: 0.45; }
+            50% { height: 32px; opacity: 1; }
         }
 
         .live-agent-pill {
@@ -269,13 +298,6 @@
             font-size: 12px;
         }
 
-        .live-completed-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
         .live-recent {
             margin-top: 18px;
         }
@@ -287,27 +309,28 @@
         }
 
         .live-recent-item {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
-            gap: 10px;
-            align-items: center;
-            padding: 10px 12px;
+            display: block;
+            padding: 12px 14px;
             border-radius: 8px;
             background: var(--panel-soft);
             border: 1px solid var(--border);
+            color: inherit;
+            text-decoration: none;
         }
 
-        .live-recent-item button.linkish {
-            background: transparent;
-            color: var(--blue);
-            min-height: auto;
-            padding: 0;
+        .live-recent-item:hover {
+            border-color: #445065;
+            background: var(--panel-hover);
+        }
+
+        .live-recent-title {
+            font-weight: 600;
+            margin-bottom: 4px;
         }
 
         .live-recent-meta {
             color: var(--muted);
             font-size: 12px;
-            margin-top: 4px;
         }
 
         @media (max-width: 860px) {
@@ -1219,6 +1242,7 @@
                     class="muted"
                 >
                     Немає активного уроку. Натисніть Start Lesson.
+                    Після Stop урок з’явиться в Recent Lessons.
                 </div>
 
                 <div
@@ -1229,97 +1253,42 @@
                         id="live-session-title"
                         class="live-title"
                     ></div>
-
-                    <div>
-                        Status:
-                        <strong id="live-session-status"></strong>
-                    </div>
-
-                    <div class="live-metrics">
-                        <div
-                            class="metric"
-                            id="live-metric-recorded"
-                        >
-                            <span id="live-recorded-label">Записано</span>
-                            <strong id="live-recorded">00:00:00</strong>
-                        </div>
-                        <div
-                            class="metric"
-                            id="live-metric-pause"
-                            style="display: none;"
-                        >
-                            <span>Пауза</span>
-                            <strong id="live-pause-timer">00:00</strong>
-                        </div>
-                        <div
-                            class="metric"
-                            id="live-metric-wall"
-                            style="display: none;"
-                        >
-                            <span>Тривалість уроку</span>
-                            <strong id="live-wall">00:00:00</strong>
-                        </div>
-                        <div
-                            class="metric"
-                            id="live-metric-paused-total"
-                            style="display: none;"
-                        >
-                            <span>На паузі</span>
-                            <strong id="live-paused-total">00:00:00</strong>
-                        </div>
-                        <div class="metric">
-                            <span>Chunks</span>
-                            <strong id="live-chunk-counts">0 / 0</strong>
-                        </div>
-                    </div>
-
                     <div
-                        id="live-activity"
-                        class="muted"
+                        id="live-state-line"
+                        class="live-state-line"
                     ></div>
 
                     <div
-                        id="live-completed-actions"
-                        class="live-completed-actions"
+                        id="live-wave"
+                        class="live-wave"
+                        aria-hidden="true"
+                        data-extension="live-audio-level"
+                    >
+                        <span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span>
+                    </div>
+
+                    <div
+                        id="live-recorded-line"
+                        class="live-recorded-line"
+                    >
+                        Записано: 00:00:00
+                    </div>
+                    <div
+                        id="live-pause-line"
+                        class="live-pause-line"
                         style="display: none;"
                     >
-                        <a
-                            id="live-view-transcript"
-                            class="button secondary"
-                            href="#"
-                            target="_blank"
-                            rel="noopener"
-                        >
-                            Переглянути транскрипцію
-                        </a>
-                        <a
-                            id="live-download-transcript"
-                            class="button secondary"
-                            href="#"
-                        >
-                            Завантажити TXT
-                        </a>
-                        <button
-                            id="live-delete-lesson"
-                            class="danger-button"
-                            type="button"
-                        >
-                            Видалити урок
-                        </button>
+                        Пауза: 00:00
                     </div>
-
-                    <div
-                        id="live-chunk-list"
-                        class="live-chunk-list"
-                    ></div>
                 </div>
             </div>
         </div>
 
         <div class="live-recent">
-            <h3>Recent lessons</h3>
+            <h3>Recent Lessons</h3>
             <p class="muted" style="margin-bottom: 0;">
-                Latest sessions (active, completed, cancelled, failed).
+                Натисніть урок, щоб відкрити деталі, аудіо та транскрипцію.
             </p>
             <div
                 id="live-recent-list"
@@ -2654,6 +2623,7 @@
     let liveInFlight = false;
     let liveSession = null;
     let livePollTimer = null;
+    let livePauseTickTimer = null;
 
     const liveTitle = document.getElementById("live-title");
     const liveLanguage = document.getElementById("live-language");
@@ -2667,26 +2637,11 @@
     const liveEmpty = document.getElementById("live-empty");
     const liveActive = document.getElementById("live-active");
     const liveSessionTitle = document.getElementById("live-session-title");
-    const liveSessionStatus = document.getElementById("live-session-status");
-    const liveRecordedLabel = document.getElementById("live-recorded-label");
-    const liveRecorded = document.getElementById("live-recorded");
-    const liveMetricPause = document.getElementById("live-metric-pause");
-    const livePauseTimer = document.getElementById("live-pause-timer");
-    const liveMetricWall = document.getElementById("live-metric-wall");
-    const liveWall = document.getElementById("live-wall");
-    const liveMetricPausedTotal = document.getElementById(
-        "live-metric-paused-total"
-    );
-    const livePausedTotal = document.getElementById("live-paused-total");
-    const liveChunkCounts = document.getElementById("live-chunk-counts");
-    const liveActivity = document.getElementById("live-activity");
-    const liveChunkList = document.getElementById("live-chunk-list");
-    const liveCompletedActions = document.getElementById("live-completed-actions");
-    const liveViewTranscript = document.getElementById("live-view-transcript");
-    const liveDownloadTranscript = document.getElementById("live-download-transcript");
-    const liveDeleteLesson = document.getElementById("live-delete-lesson");
+    const liveStateLine = document.getElementById("live-state-line");
+    const liveWave = document.getElementById("live-wave");
+    const liveRecordedLine = document.getElementById("live-recorded-line");
+    const livePauseLine = document.getElementById("live-pause-line");
     const liveRecentList = document.getElementById("live-recent-list");
-    let livePauseTickTimer = null;
 
     function formatLiveDuration(seconds) {
         const total = Math.max(0, Math.floor(Number(seconds) || 0));
@@ -2712,32 +2667,15 @@
             + String(secs).padStart(2, "0");
     }
 
-    function stopLivePauseTicker() {
-        if (livePauseTickTimer) {
-            window.clearInterval(livePauseTickTimer);
-            livePauseTickTimer = null;
+    function formatLiveDate(value) {
+        if (!value) {
+            return "";
         }
-    }
-
-    function startLivePauseTicker(pauseStartedAt) {
-        stopLivePauseTicker();
-        if (!pauseStartedAt) {
-            return;
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return String(value).slice(0, 19);
         }
-        const tick = () => {
-            const startedMs = Date.parse(pauseStartedAt);
-            if (Number.isNaN(startedMs)) {
-                return;
-            }
-            const seconds = (Date.now() - startedMs) / 1000;
-            livePauseTimer.textContent = formatPauseClock(seconds);
-        };
-        tick();
-        livePauseTickTimer = window.setInterval(tick, 1000);
-    }
-
-    function formatLiveRange(start, end) {
-        return formatLiveDuration(start) + "–" + formatLiveDuration(end);
+        return date.toLocaleString("uk-UA");
     }
 
     function setLiveMessage(text, isError) {
@@ -2758,39 +2696,47 @@
     }
 
     function isLiveTerminal(status) {
-        return [
-            "completed",
-            "cancelled",
-            "failed",
-        ].includes(status);
+        return ["completed", "cancelled", "failed"].includes(status);
     }
 
-    function lessonTxtUrl(sessionId, download) {
-        const base = "/api/live/sessions/"
-            + encodeURIComponent(sessionId)
-            + "/lesson.txt";
-        return download ? (base + "?download=1") : base;
+    function stopLivePauseTicker() {
+        if (livePauseTickTimer) {
+            window.clearInterval(livePauseTickTimer);
+            livePauseTickTimer = null;
+        }
+    }
+
+    function startLivePauseTicker(pauseStartedAt) {
+        stopLivePauseTicker();
+        if (!pauseStartedAt) {
+            return;
+        }
+        const tick = () => {
+            const startedMs = Date.parse(pauseStartedAt);
+            if (Number.isNaN(startedMs)) {
+                return;
+            }
+            livePauseLine.textContent = "Пауза: "
+                + formatPauseClock((Date.now() - startedMs) / 1000);
+        };
+        tick();
+        livePauseTickTimer = window.setInterval(tick, 1000);
     }
 
     function updateLiveControls(session) {
         const status = session ? session.status : null;
         const recording = status === "recording";
         const paused = status === "paused";
-        const busy = [
-            "stopping",
-            "processing",
-            "cancelling",
-        ].includes(status);
-        const canStart = !session || isLiveTerminal(status);
+        const busy = ["stopping", "processing", "cancelling"].includes(status);
+        const canStart = !session || !isLiveInProgress(status);
 
         liveStart.disabled = !canStart || liveInFlight;
         livePause.disabled = !recording || liveInFlight;
         liveResume.disabled = !paused || liveInFlight;
         liveStop.disabled = !(recording || paused) || liveInFlight;
         liveCancel.disabled = !session
-            || isLiveTerminal(status)
+            || !isLiveInProgress(status)
             || liveInFlight;
-
         liveTitle.disabled = !canStart;
         liveLanguage.disabled = !canStart;
 
@@ -2801,241 +2747,104 @@
         }
     }
 
-    function updateLiveTimers(session) {
-        const status = session.status;
-        const captured = formatLiveDuration(
-            session.captured_duration_seconds
-        );
-
-        liveMetricWall.style.display = "none";
-        liveMetricPausedTotal.style.display = "none";
-        liveMetricPause.style.display = "none";
-        stopLivePauseTicker();
-
-        if (status === "paused") {
-            liveRecordedLabel.textContent = "Записано";
-            liveRecorded.textContent = captured;
-            liveMetricPause.style.display = "block";
-            livePauseTimer.textContent = formatPauseClock(
-                session.current_pause_seconds || 0
-            );
-            startLivePauseTicker(session.pause_started_at);
-            return;
+    function setWaveState(status) {
+        liveWave.classList.remove("is-recording", "is-paused");
+        if (status === "recording") {
+            liveWave.classList.add("is-recording");
+        } else if (status === "paused") {
+            liveWave.classList.add("is-paused");
         }
-
-        if (status === "completed") {
-            liveRecordedLabel.textContent = "Записано аудіо";
-            liveRecorded.textContent = captured;
-            liveMetricWall.style.display = "block";
-            liveWall.textContent = formatLiveDuration(
-                session.wall_duration_seconds
-            );
-            liveMetricPausedTotal.style.display = "block";
-            livePausedTotal.textContent = formatLiveDuration(
-                session.paused_duration_seconds
-            );
-            return;
-        }
-
-        // recording / processing / stopping / cancelled / failed
-        liveRecordedLabel.textContent = (
-            status === "recording" ? "Записано" : "Записано"
-        );
-        if (isLiveTerminal(status) && status !== "completed") {
-            liveRecordedLabel.textContent = "Записано аудіо";
-            liveMetricWall.style.display = "block";
-            liveWall.textContent = formatLiveDuration(
-                session.wall_duration_seconds
-            );
-            liveMetricPausedTotal.style.display = "block";
-            livePausedTotal.textContent = formatLiveDuration(
-                session.paused_duration_seconds
-            );
-        }
-        liveRecorded.textContent = captured;
+        // Extension point: replace animation with agent audio-level bars later.
     }
 
-    function renderLiveSession(session) {
-        liveSession = session;
 
-        if (!session) {
-            liveEmpty.style.display = "block";
-            liveActive.style.display = "none";
-            liveCompletedActions.style.display = "none";
-            stopLivePauseTicker();
-            updateLiveControls(null);
-            return;
+    function renderLiveSession(session) {
+        // Active panel only for recording/paused. Stop/processing goes to Recent.
+        if (!session || !["recording", "paused"].includes(session.status)) {
+            liveSession = (session && ["recording", "paused", "stopping", "processing", "cancelling"].includes(session.status))
+                ? session
+                : null;
+            // Keep internal handle for stop/cancel while stopping/processing from active endpoint,
+            // but do not show the busy processing state in the hero panel.
+            if (!session || !["recording", "paused"].includes(session && session.status)) {
+                liveEmpty.style.display = "block";
+                liveActive.style.display = "none";
+                stopLivePauseTicker();
+                setWaveState(null);
+                // If still in-progress server-side (processing), controls stay locked via liveSession.
+                if (session && ["stopping", "processing", "cancelling"].includes(session.status)) {
+                    liveSession = session;
+                    updateLiveControls({ status: "processing" });
+                } else {
+                    liveSession = null;
+                    updateLiveControls(null);
+                }
+                return;
+            }
         }
 
+        liveSession = session;
         liveEmpty.style.display = "none";
         liveActive.style.display = "block";
         liveSessionTitle.textContent = session.title || "Lesson";
-        liveSessionStatus.textContent = session.status;
-        updateLiveTimers(session);
-        liveChunkCounts.textContent = (
-            (session.transcribed_chunk_count || 0)
-            + " / "
-            + (session.chunk_count || 0)
-        );
+        setWaveState(session.status);
+        liveRecordedLine.textContent = "Записано: "
+            + formatLiveDuration(session.captured_duration_seconds);
 
         if (session.status === "recording") {
-            liveActivity.textContent =
-                "Запис… захоплюється системне аудіо.";
-        } else if (session.status === "paused") {
-            liveActivity.textContent =
-                "Пауза. Аудіо зараз не записується.";
-        } else if (
-            session.status === "processing"
-            || session.status === "stopping"
-        ) {
-            liveActivity.textContent =
-                "Обробка… очікування завершення транскрипції чанків.";
-        } else if (session.status === "completed") {
-            liveActivity.textContent = session.has_lesson_txt
-                ? "Завершено. lesson.txt доступний."
-                : "Завершено.";
-        } else if (session.status === "cancelled") {
-            liveActivity.textContent = "Скасовано.";
-        } else if (session.status === "failed") {
-            liveActivity.textContent = session.error || "Помилка.";
+            liveStateLine.textContent = "Запис";
+            livePauseLine.style.display = "none";
+            stopLivePauseTicker();
         } else {
-            liveActivity.textContent = "";
+            liveStateLine.textContent = "Пауза";
+            livePauseLine.style.display = "block";
+            livePauseLine.textContent = "Пауза: "
+                + formatPauseClock(session.current_pause_seconds || 0);
+            startLivePauseTicker(session.pause_started_at);
         }
 
-        if (session.error && session.status !== "failed") {
+        if (session.error) {
             setLiveMessage(session.error, true);
         }
-
-        const showCompletedActions = isLiveTerminal(session.status);
-        liveCompletedActions.style.display = showCompletedActions
-            ? "flex"
-            : "none";
-
-        if (showCompletedActions) {
-            const hasTxt = Boolean(session.has_lesson_txt);
-            liveViewTranscript.href = hasTxt
-                ? lessonTxtUrl(session.session_id, false)
-                : "#";
-            liveDownloadTranscript.href = hasTxt
-                ? lessonTxtUrl(session.session_id, true)
-                : "#";
-            liveViewTranscript.style.display = hasTxt ? "inline-flex" : "none";
-            liveDownloadTranscript.style.display = hasTxt
-                ? "inline-flex"
-                : "none";
-            liveDeleteLesson.style.display = "inline-flex";
-        }
-
-        const chunks = session.chunks || [];
-        liveChunkList.innerHTML = "";
-
-        chunks
-            .slice()
-            .reverse()
-            .forEach((chunk) => {
-                const item = document.createElement("div");
-                item.className = "live-chunk-item";
-
-                const head = document.createElement("div");
-                head.className = "chunk-head";
-
-                const left = document.createElement("strong");
-                left.textContent = "#" + chunk.chunk_index;
-
-                const right = document.createElement("span");
-                right.textContent = chunk.status;
-
-                head.appendChild(left);
-                head.appendChild(right);
-
-                const range = document.createElement("div");
-                range.className = "muted";
-                range.textContent = formatLiveRange(
-                    chunk.start_offset_seconds,
-                    chunk.end_offset_seconds
-                );
-
-                item.appendChild(head);
-                item.appendChild(range);
-                liveChunkList.appendChild(item);
-            });
-
         updateLiveControls(session);
     }
 
     function renderRecentLessons(sessions) {
         liveRecentList.innerHTML = "";
-
         if (!sessions || sessions.length === 0) {
             const empty = document.createElement("p");
             empty.className = "muted";
-            empty.textContent = "No lessons yet.";
+            empty.textContent = "Немає уроків.";
             liveRecentList.appendChild(empty);
             return;
         }
 
         sessions.forEach((session) => {
-            const item = document.createElement("div");
+            const item = document.createElement("a");
             item.className = "live-recent-item";
+            item.href = "/live/sessions/"
+                + encodeURIComponent(session.session_id);
 
-            const left = document.createElement("div");
-            const titleBtn = document.createElement("button");
-            titleBtn.type = "button";
-            titleBtn.className = "linkish";
-            titleBtn.textContent = session.title || session.session_id;
-            titleBtn.addEventListener("click", () => {
-                focusLiveSession(session.session_id);
-            });
+            const title = document.createElement("div");
+            title.className = "live-recent-title";
+            title.textContent = session.title || session.session_id;
 
             const meta = document.createElement("div");
             meta.className = "live-recent-meta";
+            const statusLabel = session.status === "processing"
+                ? "Processing"
+                : session.status === "completed"
+                    ? "Completed"
+                    : session.status;
             meta.textContent = [
-                session.status,
+                statusLabel,
+                formatLiveDate(session.started_at || session.created_at),
                 "записано "
-                    + formatLiveDuration(
-                        session.captured_duration_seconds
-                    ),
-                (session.transcribed_chunk_count || 0)
-                    + "/"
-                    + (session.chunk_count || 0)
-                    + " chunks",
+                    + formatLiveDuration(session.captured_duration_seconds),
             ].join(" · ");
 
-            left.appendChild(titleBtn);
-            left.appendChild(meta);
-
-            const right = document.createElement("div");
-            right.className = "live-controls";
-
-            if (session.has_lesson_txt) {
-                const view = document.createElement("a");
-                view.className = "button secondary";
-                view.textContent = "Переглянути транскрипцію";
-                view.target = "_blank";
-                view.rel = "noopener";
-                view.href = lessonTxtUrl(session.session_id, false);
-                right.appendChild(view);
-
-                const download = document.createElement("a");
-                download.className = "button secondary";
-                download.textContent = "Завантажити TXT";
-                download.href = lessonTxtUrl(session.session_id, true);
-                right.appendChild(download);
-            }
-
-            if (isLiveTerminal(session.status)) {
-                const del = document.createElement("button");
-                del.type = "button";
-                del.className = "danger-button";
-                del.textContent = "Видалити урок";
-                del.addEventListener("click", () => {
-                    deleteLiveLesson(session.session_id);
-                });
-                right.appendChild(del);
-            }
-
-            item.appendChild(left);
-            item.appendChild(right);
+            item.appendChild(title);
+            item.appendChild(meta);
             liveRecentList.appendChild(item);
         });
     }
@@ -3043,13 +2852,11 @@
     async function liveFetch(url, options) {
         const response = await fetch(url, options || {});
         let payload = null;
-
         try {
             payload = await response.json();
         } catch (_error) {
             payload = null;
         }
-
         if (!response.ok) {
             const detail = payload && payload.detail
                 ? payload.detail
@@ -3060,7 +2867,6 @@
                     : JSON.stringify(detail)
             );
         }
-
         return payload;
     }
 
@@ -3096,27 +2902,12 @@
         );
     }
 
-    async function focusLiveSession(sessionId) {
-        try {
-            const session = await liveFetch(
-                "/api/live/sessions/"
-                + encodeURIComponent(sessionId)
-            );
-            renderLiveSession(session);
-            setLiveMessage("");
-        } catch (error) {
-            setLiveMessage(error.message, true);
-        }
-    }
-
     async function refreshRecentLessons() {
         try {
-            const payload = await liveFetch(
-                "/api/live/sessions?limit=10"
-            );
+            const payload = await liveFetch("/api/live/sessions?limit=10");
             renderRecentLessons(payload.sessions || []);
         } catch (_error) {
-            // Keep previous recent list on transient errors.
+            // keep previous list
         }
     }
 
@@ -3124,49 +2915,22 @@
         const payload = await liveFetch("/api/live/sessions/active");
         const active = payload.session || null;
 
-        if (active) {
+        if (active && isLiveInProgress(active.status)) {
             let session = active;
-            if (isLiveInProgress(active.status)) {
-                try {
-                    session = await pollLiveSessionById(
-                        active.session_id
-                    );
-                } catch (_error) {
-                    session = active;
-                }
+            try {
+                session = await pollLiveSessionById(active.session_id);
+            } catch (_error) {
+                session = active;
             }
             renderLiveSession(session);
-        } else if (
-            liveSession
-            && isLiveInProgress(liveSession.status)
-        ) {
-            // Race: stop moved to processing/completed between polls.
+        } else if (liveSession && isLiveInProgress(liveSession.status)) {
             try {
                 const session = await pollLiveSessionById(
                     liveSession.session_id
                 );
                 renderLiveSession(session);
             } catch (_error) {
-                try {
-                    const session = await liveFetch(
-                        "/api/live/sessions/"
-                        + encodeURIComponent(liveSession.session_id)
-                    );
-                    renderLiveSession(session);
-                } catch (_inner) {
-                    // Keep current panel content.
-                }
-            }
-        } else if (liveSession && isLiveTerminal(liveSession.status)) {
-            // Keep completed/cancelled/failed lesson visible after Stop.
-            try {
-                const session = await liveFetch(
-                    "/api/live/sessions/"
-                    + encodeURIComponent(liveSession.session_id)
-                );
-                renderLiveSession(session);
-            } catch (_error) {
-                // Keep current panel content.
+                renderLiveSession(null);
             }
         } else {
             renderLiveSession(null);
@@ -3175,29 +2939,35 @@
         await refreshRecentLessons();
     }
 
-    async function liveAction(url, body) {
+    async function liveAction(url, body, options) {
         if (liveInFlight) {
             return;
         }
-
         liveInFlight = true;
         updateLiveControls(liveSession);
         setLiveMessage("");
+        const clearOnStop = options && options.clearOnStop;
 
         try {
-            const options = {
-                method: "POST",
-                headers: {},
-            };
-
+            const request = { method: "POST", headers: {} };
             if (body) {
-                options.headers["Content-Type"] = "application/json";
-                options.body = JSON.stringify(body);
+                request.headers["Content-Type"] = "application/json";
+                request.body = JSON.stringify(body);
             }
-
-            const payload = await liveFetch(url, options);
-            renderLiveSession(payload);
-            setLiveMessage("");
+            const payload = await liveFetch(url, request);
+            if (clearOnStop) {
+                renderLiveSession(null);
+                setLiveMessage(
+                    payload.status === "processing"
+                        ? "Урок зупинено. Транскрипція завершується в Recent Lessons."
+                        : "Урок збережено в Recent Lessons."
+                );
+            } else if (payload.status === "cancelled") {
+                renderLiveSession(null);
+                setLiveMessage("Урок скасовано.");
+            } else {
+                renderLiveSession(payload);
+            }
             await refreshRecentLessons();
         } catch (error) {
             setLiveMessage(error.message, true);
@@ -3215,7 +2985,6 @@
             liveTitle.focus();
             return;
         }
-
         await liveAction("/api/live/sessions/start", {
             title: title,
             language: liveLanguage.value || "auto",
@@ -3223,9 +2992,7 @@
     });
 
     livePause.addEventListener("click", async () => {
-        if (!liveSession) {
-            return;
-        }
+        if (!liveSession) return;
         await liveAction(
             "/api/live/sessions/"
             + encodeURIComponent(liveSession.session_id)
@@ -3234,9 +3001,7 @@
     });
 
     liveResume.addEventListener("click", async () => {
-        if (!liveSession) {
-            return;
-        }
+        if (!liveSession) return;
         await liveAction(
             "/api/live/sessions/"
             + encodeURIComponent(liveSession.session_id)
@@ -3245,21 +3010,19 @@
     });
 
     liveStop.addEventListener("click", async () => {
-        if (!liveSession) {
-            return;
-        }
+        if (!liveSession) return;
         await liveAction(
             "/api/live/sessions/"
             + encodeURIComponent(liveSession.session_id)
-            + "/stop"
+            + "/stop",
+            null,
+            { clearOnStop: true }
         );
     });
 
     liveCancel.addEventListener("click", async () => {
-        if (!liveSession) {
-            return;
-        }
-        if (!window.confirm("Cancel this live lesson session?")) {
+        if (!liveSession) return;
+        if (!window.confirm("Скасувати поточний урок?")) {
             return;
         }
         await liveAction(
@@ -3267,42 +3030,6 @@
             + encodeURIComponent(liveSession.session_id)
             + "/cancel"
         );
-    });
-
-    async function deleteLiveLesson(sessionId) {
-        if (!sessionId) {
-            return;
-        }
-        if (!window.confirm(
-            "Видалити цей урок разом з аудіо та транскрипцією?"
-        )) {
-            return;
-        }
-
-        liveInFlight = true;
-        try {
-            await liveFetch(
-                "/api/live/sessions/" + encodeURIComponent(sessionId),
-                { method: "DELETE" }
-            );
-            if (liveSession && liveSession.session_id === sessionId) {
-                renderLiveSession(null);
-            }
-            setLiveMessage("Урок видалено.");
-            await refreshRecentLessons();
-        } catch (error) {
-            setLiveMessage(error.message, true);
-        } finally {
-            liveInFlight = false;
-            updateLiveControls(liveSession);
-        }
-    }
-
-    liveDeleteLesson.addEventListener("click", async () => {
-        if (!liveSession || !isLiveTerminal(liveSession.status)) {
-            return;
-        }
-        await deleteLiveLesson(liveSession.session_id);
     });
 
     refreshLiveAgent();

@@ -127,6 +127,24 @@ class SessionStore:
         if path.is_file():
             path.unlink()
 
+    def audio_file_path(self, session_id: str, filename: str) -> Path:
+        safe_name = Path(filename).name
+        if (
+            not filename
+            or safe_name != filename
+            or "/" in filename
+            or "\\" in filename
+            or not safe_name.endswith(".wav")
+        ):
+            raise ValueError("Invalid audio filename")
+        directory = self.audio_dir(session_id).resolve()
+        path = (directory / safe_name).resolve()
+        if directory not in path.parents and path != directory:
+            raise ValueError("Invalid audio path")
+        if not path.is_file():
+            raise FileNotFoundError(f"Audio file not found: {filename}")
+        return path
+
     def delete_session(self, session_id: str) -> None:
         """Recursively delete one session directory under the sessions root only."""
         safe_id = Path(session_id).name

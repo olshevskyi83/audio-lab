@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ session.title }} — Live Lesson</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: system-ui, -apple-system, sans-serif;
+            --background: #0f1117;
+            --panel: #191d25;
+            --border: #303744;
+            --text: #f1f4f8;
+            --muted: #929baa;
+            --blue: #537dff;
+            --green: #65d889;
+            --red: #ef7373;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--background);
+            color: var(--text);
+        }
+        main {
+            width: min(980px, calc(100% - 28px));
+            margin: 28px auto 60px;
+        }
+        a { color: #8eadff; }
+        .muted { color: var(--muted); }
+        .panel {
+            margin-top: 16px;
+            padding: 18px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: var(--panel);
+        }
+        h1 { margin: 8px 0 6px; font-size: 28px; }
+        h2 { margin: 0 0 12px; font-size: 18px; }
+        .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 16px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        button, .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 38px;
+            padding: 9px 13px;
+            border: 0;
+            border-radius: 8px;
+            background: var(--blue);
+            color: #fff;
+            font: inherit;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .button.secondary, button.secondary {
+            background: #3a414f;
+        }
+        .button.danger, button.danger {
+            background: #a84646;
+        }
+        button:disabled, .button.disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+        .chunk {
+            padding: 12px 0;
+            border-top: 1px solid var(--border);
+        }
+        .chunk:first-child { border-top: 0; }
+        .chunk-label {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        audio { width: 100%; margin-top: 6px; }
+        pre {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            background: #141820;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            line-height: 1.5;
+            max-height: 420px;
+            overflow: auto;
+        }
+        .ok { color: var(--green); }
+        .notice {
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <p><a href="/#live-lesson">← Назад до Live Lesson</a></p>
+
+    <h1>{{ session.title }}</h1>
+    <div class="meta">
+        <span>Статус: <strong>{{ session.status }}</strong></span>
+        <span>Дата: {{ session.started_at or session.created_at }}</span>
+        <span>Записано: {{ recorded_label }}</span>
+        {% if session.status == 'completed' %}
+        <span>Тривалість уроку: {{ wall_label }}</span>
+        <span>На паузі: {{ paused_label }}</span>
+        {% endif %}
+        <span>Частини: {{ session.chunk_count }}</span>
+    </div>
+
+    <div class="panel">
+        <h2>Дії</h2>
+        <div class="actions">
+            {% if session.has_lesson_txt %}
+            <a class="button secondary" href="/api/live/sessions/{{ session.session_id }}/lesson.txt" target="_blank" rel="noopener">
+                Переглянути транскрипцію
+            </a>
+            <a class="button secondary" href="/api/live/sessions/{{ session.session_id }}/lesson.txt?download=1">
+                Завантажити TXT
+            </a>
+            {% endif %}
+
+            <button
+                id="knowledge-btn"
+                class="button secondary"
+                type="button"
+                disabled
+                title="{{ session.knowledge.message }}"
+            >
+                Додати в базу знань
+            </button>
+
+            {% if session.status in ['completed', 'cancelled', 'failed'] %}
+            <button id="delete-btn" class="button danger" type="button">
+                Видалити урок
+            </button>
+            {% endif %}
+        </div>
+        <p class="notice" id="knowledge-note">
+            База знань: {{ session.knowledge.message }}
+        </p>
+        <p class="notice" id="action-message"></p>
+    </div>
+
+    <div class="panel">
+        <h2>Аудіо частини</h2>
+        {% if chunks %}
+            {% for chunk in chunks %}
+            <div class="chunk">
+                <div class="chunk-label">
+                    #{{ chunk.chunk_index }}
+                    · {{ chunk.range_label }}
+                    · {{ chunk.status }}
+                </div>
+                {% if chunk.play_url %}
+                <audio controls preload="none" src="{{ chunk.play_url }}"></audio>
+                {% else %}
+                <p class="muted">Аудіофайл недоступний</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="muted">Немає збережених аудіочастин.</p>
+        {% endif %}
+    </div>
+
+    <div class="panel">
+        <h2>Транскрипція</h2>
+        {% if transcript %}
+        <pre>{{ transcript }}</pre>
+        {% else %}
+        <p class="muted">Транскрипція ще не зібрана.</p>
+        {% endif %}
+    </div>
+</main>
+
+<script>
+    const sessionId = "{{ session.session_id }}";
+    const deleteBtn = document.getElementById("delete-btn");
+    const message = document.getElementById("action-message");
+
+    if (deleteBtn) {
+        deleteBtn.addEventListener("click", async () => {
+            if (!window.confirm(
+                "Видалити цей урок разом з аудіо та транскрипцією?"
+            )) {
+                return;
+            }
+            deleteBtn.disabled = true;
+            try {
+                const response = await fetch(
+                    "/api/live/sessions/" + encodeURIComponent(sessionId),
+                    { method: "DELETE" }
+                );
+                if (!response.ok) {
+                    const payload = await response.json().catch(() => ({}));
+                    throw new Error(payload.detail || ("HTTP " + response.status));
+                }
+                window.location.href = "/#live-lesson";
+            } catch (error) {
+                message.textContent = String(error.message || error);
+                deleteBtn.disabled = false;
+            }
+        });
+    }
+</script>
+</body>
+</html>

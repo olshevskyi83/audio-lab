@@ -15,7 +15,7 @@ public struct SilenceDetector: Sendable {
         rmsThreshold: Float = 0.01,
         silenceSeconds: Double = 5.0,
         minChunkSeconds: Double = 20.0,
-        maxChunkSeconds: Double = 180.0,
+        maxChunkSeconds: Double = 600.0,
         sampleRate: Int = 16_000
     ) {
         self.rmsThreshold = rmsThreshold

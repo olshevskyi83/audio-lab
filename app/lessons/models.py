@@ -213,5 +213,12 @@ class LessonSession(BaseModel):
             "error": self.error,
             "lesson_txt_path": self.lesson_txt_path,
             "has_lesson_txt": bool(self.lesson_txt_path),
+            # Knowledge indexing is not implemented for live lessons yet.
+            "knowledge": {
+                "status": "coming_next",
+                "available": False,
+                "indexed": False,
+                "message": "Індексація уроків у базу знань з’явиться наступним кроком",
+            },
             "chunks": chunks,
         }
