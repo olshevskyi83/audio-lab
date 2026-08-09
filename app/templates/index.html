@@ -2858,25 +2858,44 @@
             });
         }
 
-        async function liveFetch(url, options) {
-            const response = await fetch(url, options || {});
-            let payload = null;
+        async function liveFetch(url, options, timeoutMs) {
+            const controller = new AbortController();
+            const timeout = window.setTimeout(
+                () => controller.abort(),
+                timeoutMs || 20000
+            );
             try {
-                payload = await response.json();
-            } catch (_error) {
-                payload = null;
+                const request = Object.assign({}, options || {}, {
+                    signal: controller.signal,
+                });
+                const response = await fetch(url, request);
+                let payload = null;
+                try {
+                    payload = await response.json();
+                } catch (_error) {
+                    payload = null;
+                }
+                if (!response.ok) {
+                    const detail = payload && payload.detail
+                        ? payload.detail
+                        : ("HTTP " + response.status);
+                    throw new Error(
+                        typeof detail === "string"
+                            ? detail
+                            : JSON.stringify(detail)
+                    );
+                }
+                return payload;
+            } catch (error) {
+                if (error && error.name === "AbortError") {
+                    throw new Error(
+                        "Запит перевищив час очікування. Перевірте Capture Agent."
+                    );
+                }
+                throw error;
+            } finally {
+                window.clearTimeout(timeout);
             }
-            if (!response.ok) {
-                const detail = payload && payload.detail
-                    ? payload.detail
-                    : ("HTTP " + response.status);
-                throw new Error(
-                    typeof detail === "string"
-                        ? detail
-                        : JSON.stringify(detail)
-                );
-            }
-            return payload;
         }
 
         async function refreshLiveAgent() {
@@ -2967,7 +2986,7 @@
                     request.headers["Content-Type"] = "application/json";
                     request.body = JSON.stringify(body);
                 }
-                const payload = await liveFetch(url, request);
+                const payload = await liveFetch(url, request, 90000);
                 if (clearOnStop) {
                     renderLiveSession(null);
                     setLiveMessage(
@@ -2981,13 +3000,14 @@
                 } else {
                     renderLiveSession(payload);
                 }
-                await refreshRecentRecordings();
             } catch (error) {
                 setLiveMessage(error.message, true);
             } finally {
                 liveInFlight = false;
                 updateLiveControls(liveSession);
-                await refreshLiveAgent();
+                // Secondary refreshes must never keep action buttons disabled.
+                void refreshRecentRecordings();
+                void refreshLiveAgent();
             }
         }
 

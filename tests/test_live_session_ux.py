@@ -205,6 +205,16 @@ def test_index_keeps_completed_lesson_in_ui_contract(api_client):
     assert "Скасувати поточний урок?" not in html
 
 
+def test_live_actions_are_not_blocked_by_secondary_refreshes(api_client):
+    client, _, _, _ = api_client
+    html = client.get("/").text
+
+    assert "Secondary refreshes must never keep action buttons disabled" in html
+    assert "const controller = new AbortController()" in html
+    assert "liveInFlight = false" in html
+    assert "void refreshRecentRecordings()" in html
+
+
 @pytest.mark.asyncio
 async def test_pause_exposes_current_pause_timer_fields(lesson_env):
     service, _, _, _, _ = lesson_env
@@ -268,4 +278,3 @@ def test_completion_visible_via_poll_without_reload(api_client):
     detail = client.get(f"/api/live/sessions/{sid}")
     assert detail.json()["session_id"] == sid
     assert detail.json()["status"] == "completed"
-
