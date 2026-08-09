@@ -139,7 +139,8 @@ class KnowledgeService:
             KnowledgeSourceType.UPLOAD_TASK,
             task_id,
         )
-        knowledge_id = existing.knowledge_id if existing else None
+        # Homelab Core task id is the stable generic Knowledge document id.
+        knowledge_id = existing.knowledge_id if existing else task_id
         metadata: dict[str, Any] = {"task_id": task_id}
         if source_file:
             metadata["source_file"] = Path(source_file).name

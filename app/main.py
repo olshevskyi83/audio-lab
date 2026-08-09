@@ -446,6 +446,13 @@ async def call_core_action(
                     payload,
                 )
 
+            if status == "deleted":
+                return (
+                    True,
+                    "Транскрипцію видалено з бази знань. Локальні файли збережено.",
+                    payload,
+                )
+
         return (
             True,
             "Операцію успішно виконано.",
@@ -1031,10 +1038,7 @@ async def index_task(
 ) -> RedirectResponse:
     ok, message, payload = await call_core_action(
         method="POST",
-        endpoint=(
-            f"/audio-lab/tasks/"
-            f"{task_id}/index"
-        ),
+        endpoint=f"/knowledge/documents/{task_id}/index",
     )
 
     if ok:
@@ -1073,10 +1077,7 @@ async def reindex_task(
 ) -> RedirectResponse:
     ok, message, payload = await call_core_action(
         method="POST",
-        endpoint=(
-            f"/audio-lab/tasks/"
-            f"{task_id}/reindex"
-        ),
+        endpoint=f"/knowledge/documents/{task_id}/reindex",
     )
 
     if ok:
@@ -1116,10 +1117,7 @@ async def unindex_task(
     """Remove from Knowledge only. Local audio/transcripts remain."""
     ok, message, _payload = await call_core_action(
         method="DELETE",
-        endpoint=(
-            f"/audio-lab/tasks/"
-            f"{task_id}/index"
-        ),
+        endpoint=f"/knowledge/documents/{task_id}",
     )
 
     if ok:

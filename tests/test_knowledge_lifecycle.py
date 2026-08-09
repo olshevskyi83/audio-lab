@@ -88,6 +88,39 @@ def test_remove_from_knowledge_api_only(api_client):
     assert (session_dir / "audio" / "chunk_0001.wav").is_file()
 
 
+def test_completed_task_uses_generic_core_knowledge_endpoints(api_client, monkeypatch):
+    client, service, _, _ = api_client
+    import app.main as main_module
+
+    calls: list[tuple[str, str]] = []
+
+    async def fake_core_action(*, method: str, endpoint: str):
+        calls.append((method, endpoint))
+        if method == "DELETE":
+            return True, "deleted", {"status": "deleted", "index_deleted": True}
+        return True, "indexed", {
+            "status": "indexed",
+            "chunk_count": 2,
+            "source_file": "talk.wav",
+        }
+
+    monkeypatch.setattr(main_module, "call_core_action", fake_core_action)
+
+    assert client.post("/tasks/core-task-1/index", follow_redirects=False).status_code == 303
+    registered = service.knowledge.state_for_source("upload_task", "core-task-1")
+    assert registered["document_id"] == "core-task-1"
+
+    assert client.post("/tasks/core-task-1/reindex", follow_redirects=False).status_code == 303
+    assert client.post("/tasks/core-task-1/unindex", follow_redirects=False).status_code == 303
+
+    assert calls == [
+        ("POST", "/knowledge/documents/core-task-1/index"),
+        ("POST", "/knowledge/documents/core-task-1/reindex"),
+        ("DELETE", "/knowledge/documents/core-task-1"),
+    ]
+    assert service.knowledge.state_for_source("upload_task", "core-task-1")["indexed"] is False
+
+
 def test_stable_knowledge_ids_across_reindex(api_client):
     client, _, _, core = api_client
     sid = _complete_recording(client, core, "Stable id")

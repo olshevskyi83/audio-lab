@@ -1499,6 +1499,17 @@
                         <span class="knowledge-ok" style="color: var(--green); font-size: 14px;">
                             База знань: Додано ✓
                         </span>
+                        <form method="post" action="/tasks/{{ task.id }}/reindex">
+                            <button class="secondary" type="submit">
+                                Переіндексувати
+                            </button>
+                        </form>
+                        <form method="post" action="/tasks/{{ task.id }}/unindex"
+                            onsubmit="return confirm('Видалити транскрипцію з Homelab Knowledge? Локальні аудіо та TXT залишаться.')">
+                            <button class="danger-button" type="submit">
+                                Видалити з бази знань
+                            </button>
+                        </form>
                         {% endif %}
 
                         <form method="post" action="/tasks/{{ task.id }}/local-delete" class="local-delete-form"
