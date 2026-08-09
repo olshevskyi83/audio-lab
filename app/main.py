@@ -899,6 +899,57 @@ async def delete_file(
     )
 
 
+@app.post("/archive/delete-selected")
+async def bulk_delete_archive(
+    request: Request,
+) -> RedirectResponse:
+    """Delete selected archive audio files only. Knowledge is never touched."""
+    form = await request.form()
+    selected = form.getlist("filename")
+
+    if not selected:
+        return RedirectResponse(
+            url="/?error=" + quote("Не вибрано жодного файлу."),
+            status_code=303,
+        )
+
+    safe_names = [Path(s).name for s in selected if s and isinstance(s, str)]
+    if not safe_names:
+        return RedirectResponse(
+            url="/?error=" + quote("Отримано некоректні імена файлів."),
+            status_code=303,
+        )
+
+    deleted: list[str] = []
+    missing: list[str] = []
+
+    for name in safe_names:
+        archive_path = safe_path("archive", name)
+        if archive_path.exists() and archive_path.is_file():
+            archive_path.unlink()
+            deleted.append(name)
+        else:
+            missing.append(name)
+
+    if not deleted and not missing:
+        return RedirectResponse(
+            url="/?success=" + quote("Не було що видаляти."),
+            status_code=303,
+        )
+
+    parts: list[str] = []
+    if deleted:
+        parts.append(f"Видалено: {len(deleted)}")
+    if missing:
+        parts.append(f"пропущено (вже відсутні): {len(missing)}")
+    message = "; ".join(parts) + "."
+
+    return RedirectResponse(
+        url="/?success=" + quote(message),
+        status_code=303,
+    )
+
+
 @app.post(
     "/tasks/{task_id}/local-delete"
 )

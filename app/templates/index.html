@@ -1566,6 +1566,10 @@
             <table class="file-table">
                 <thead>
                     <tr>
+                        <th class="file-check-cell">
+                            <input type="checkbox" id="archive-select-all" title="Вибрати всі">
+                        </th>
+
                         <th class="file-name-cell">
                             Файл
                         </th>
@@ -1583,6 +1587,11 @@
                 <tbody>
                     {% for file in archive_files %}
                     <tr>
+                        <td class="file-check-cell">
+                            <input type="checkbox" class="archive-check" name="filename" value="{{ file.name }}"
+                                form="archive-bulk-form">
+                        </td>
+
                         <td class="file-name-cell">
                             <span class="file-name" title="{{ file.name }}">
                                 {{ file.name }}
@@ -1606,22 +1615,66 @@
                                 <a class="button secondary" href="/file/archive/{{ file.name }}">
                                     Завантажити
                                 </a>
-
-                                <form method="post" action="/delete/archive/{{ file.name }}"
-                                    onsubmit="return confirm(this.dataset.confirmMessage)" data-confirm-message="{% if file.knowledge_indexed %}Цей запис уже додано в базу знань.
-Локальне аудіо та транскрипція будуть видалені,
-але інформація залишиться в базі знань.
-Продовжити?{% else %}Видалити цей запис разом з аудіо та транскрипцією?{% endif %}">
-                                    <button class="danger-button" type="submit">
-                                        Видалити запис
-                                    </button>
-                                </form>
                             </div>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+
+            <div class="archive-bulk-controls" style="display: flex; gap: 9px; margin-top: 12px; align-items: center;">
+                <button id="archive-select-all-btn" type="button" class="secondary">
+                    Вибрати всі
+                </button>
+                <form id="archive-bulk-form" method="post" action="/archive/delete-selected"
+                    onsubmit="return confirm('Видалити вибрані аудіозаписи?')">
+                    <button id="archive-delete-selected" class="danger-button" type="submit" disabled>
+                        Видалити вибрані
+                    </button>
+                </form>
+            </div>
+
+            <script>
+                (function () {
+                    var selectAllCheckbox = document.getElementById("archive-select-all");
+                    var selectAllBtn = document.getElementById("archive-select-all-btn");
+                    var deleteBtn = document.getElementById("archive-delete-selected");
+                    var checks = document.querySelectorAll(".archive-check");
+
+                    function updateState() {
+                        var checked = document.querySelectorAll(".archive-check:checked");
+                        var count = checked.length;
+                        deleteBtn.disabled = count === 0;
+                        deleteBtn.textContent = count > 0 ? "Видалити вибрані (" + count + ")" : "Видалити вибрані";
+                        if (selectAllCheckbox) {
+                            selectAllCheckbox.checked = count === checks.length && checks.length > 0;
+                        }
+                    }
+
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.addEventListener("change", function () {
+                            var checked = this.checked;
+                            checks.forEach(function (cb) { cb.checked = checked; });
+                            updateState();
+                        });
+                    }
+
+                    if (selectAllBtn) {
+                        selectAllBtn.addEventListener("click", function () {
+                            if (selectAllCheckbox) {
+                                selectAllCheckbox.checked = !selectAllCheckbox.checked;
+                                var checked = selectAllCheckbox.checked;
+                                checks.forEach(function (cb) { cb.checked = checked; });
+                            }
+                            updateState();
+                        });
+                    }
+
+                    checks.forEach(function (cb) {
+                        cb.addEventListener("change", updateState);
+                    });
+                })();
+            </script>
             {% else %}
             <p class="empty">
                 Архів порожній.

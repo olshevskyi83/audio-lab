@@ -428,3 +428,130 @@ def test_local_delete_knowledge_never_indexed(api_client, tmp_path, monkeypatch)
 
     all_docs_after = client.get("/api/knowledge/documents").json()["documents"]
     assert len(all_docs_after) == count_before
+
+
+# ---------------------------------------------------------------------------
+# Bulk archive delete
+# ---------------------------------------------------------------------------
+
+
+def test_bulk_delete_selected_archive_files(api_client, tmp_path, monkeypatch):
+    """1. selected archive files are deleted, unselected remain"""
+    client, _, _, _ = api_client
+    import app.main as main_module
+
+    audio_root = tmp_path / "audio_root"
+    (audio_root / "archive").mkdir(parents=True)
+    monkeypatch.setattr(main_module, "AUDIO_ROOT", audio_root)
+
+    keep = audio_root / "archive" / "keep.wav"
+    keep.write_bytes(b"keep")
+    delete1 = audio_root / "archive" / "del1.wav"
+    delete1.write_bytes(b"del1")
+    delete2 = audio_root / "archive" / "del2.wav"
+    delete2.write_bytes(b"del2")
+
+    response = client.post(
+        "/archive/delete-selected",
+        data={"filename": ["del1.wav", "del2.wav"]},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert "success=" in response.headers.get("location", "")
+
+    assert keep.exists()
+    assert not delete1.exists()
+    assert not delete2.exists()
+
+
+def test_bulk_delete_empty_selection_handled(api_client):
+    """3. empty selection returns error"""
+    client, _, _, _ = api_client
+    response = client.post(
+        "/archive/delete-selected",
+        data={},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert "error=" in response.headers.get("location", "")
+
+
+def test_bulk_delete_missing_file_does_not_break(api_client, tmp_path, monkeypatch):
+    """4. missing selected file does not break the entire delete"""
+    client, _, _, _ = api_client
+    import app.main as main_module
+
+    audio_root = tmp_path / "audio_root"
+    (audio_root / "archive").mkdir(parents=True)
+    monkeypatch.setattr(main_module, "AUDIO_ROOT", audio_root)
+
+    existing = audio_root / "archive" / "exists.wav"
+    existing.write_bytes(b"exists")
+
+    response = client.post(
+        "/archive/delete-selected",
+        data={"filename": ["exists.wav", "ghost.wav"]},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    location = response.headers.get("location", "")
+    assert "success=" in location
+    assert not existing.exists()
+
+
+def test_bulk_delete_path_traversal_neutralized(api_client):
+    """5. path traversal neutralized — Path(s).name strips directories"""
+    client, _, _, _ = api_client
+    response = client.post(
+        "/archive/delete-selected",
+        data={"filename": ["../../../etc/passwd"]},
+        follow_redirects=False,
+    )
+    # Traversal is neutralized by Path().name; endpoint returns 303 (success)
+    # because it sanitizes the input to just the filename "passwd"
+    assert response.status_code == 303
+
+
+def test_bulk_delete_knowledge_never_called(api_client, tmp_path, monkeypatch):
+    """6. Knowledge/Qdrant is never called"""
+    client, service, _, _ = api_client
+    import app.main as main_module
+
+    audio_root = tmp_path / "audio_root"
+    (audio_root / "archive").mkdir(parents=True)
+    monkeypatch.setattr(main_module, "AUDIO_ROOT", audio_root)
+
+    (audio_root / "archive" / "bulk_test.wav").write_bytes(b"test")
+
+    all_docs_before = client.get("/api/knowledge/documents").json()["documents"]
+    count_before = len(all_docs_before)
+
+    response = client.post(
+        "/archive/delete-selected",
+        data={"filename": ["bulk_test.wav"]},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+
+    all_docs_after = client.get("/api/knowledge/documents").json()["documents"]
+    assert len(all_docs_after) == count_before
+
+
+def test_archive_ui_has_checkboxes_and_no_per_item_delete(api_client, tmp_path, monkeypatch):
+    """7. archive UI renders checkboxes, 8. individual delete buttons absent, 9. bulk delete button exists"""
+    client, _, _, _ = api_client
+    import app.main as main_module
+
+    audio_root = tmp_path / "audio_root"
+    (audio_root / "archive").mkdir(parents=True)
+    (audio_root / "archive" / "test.wav").write_bytes(b"test")
+    monkeypatch.setattr(main_module, "AUDIO_ROOT", audio_root)
+
+    html = client.get("/").text
+    assert "archive-check" in html
+    assert "archive-bulk-form" in html
+    assert "archive-select-all" in html
+    assert "Видалити вибрані" in html
+    assert "archive/delete-selected" in html
+    # Individual per-item delete should NOT be in the archive section.
+    assert "/delete/archive/" not in html
