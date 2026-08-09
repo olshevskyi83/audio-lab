@@ -1,11 +1,9 @@
 <!doctype html>
 <html lang="uk">
+
 <head>
     <meta charset="utf-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>Audio Lab</title>
 
@@ -249,18 +247,21 @@
 
         .live-wave {
             display: flex;
-            align-items: flex-end;
+            align-items: center;
             gap: 4px;
-            height: 36px;
+            width: 100%;
+            height: 54px;
+            padding: 2px 0;
             margin: 12px 0 14px;
         }
 
         .live-wave span {
-            width: 5px;
+            flex: 1 1 0;
+            min-width: 2px;
+            height: 10px;
             border-radius: 999px;
             background: var(--blue);
             opacity: 0.35;
-            height: 8px;
         }
 
         .live-wave.is-recording span {
@@ -268,22 +269,36 @@
             animation: live-wave-pulse 1s ease-in-out infinite;
         }
 
-        .live-wave.is-recording span:nth-child(2) { animation-delay: 0.1s; }
-        .live-wave.is-recording span:nth-child(3) { animation-delay: 0.2s; }
-        .live-wave.is-recording span:nth-child(4) { animation-delay: 0.3s; }
-        .live-wave.is-recording span:nth-child(5) { animation-delay: 0.15s; }
-        .live-wave.is-recording span:nth-child(6) { animation-delay: 0.25s; }
-        .live-wave.is-recording span:nth-child(7) { animation-delay: 0.05s; }
+        .live-wave.is-recording span:nth-child(3n) {
+            animation-delay: 0.05s;
+        }
+
+        .live-wave.is-recording span:nth-child(3n+1) {
+            animation-delay: 0.15s;
+        }
+
+        .live-wave.is-recording span:nth-child(3n+2) {
+            animation-delay: 0.25s;
+        }
 
         .live-wave.is-paused span {
             opacity: 0.25;
             animation: none;
-            height: 8px !important;
+            height: 10px !important;
         }
 
         @keyframes live-wave-pulse {
-            0%, 100% { height: 8px; opacity: 0.45; }
-            50% { height: 32px; opacity: 1; }
+
+            0%,
+            100% {
+                height: 10px;
+                opacity: 0.45;
+            }
+
+            50% {
+                height: 48px;
+                opacity: 1;
+            }
         }
 
         .live-agent-pill {
@@ -333,6 +348,25 @@
             font-size: 12px;
         }
 
+        .live-recent-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .live-recent-badge {
+            font-size: 11px;
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: #252b36;
+            color: var(--muted);
+        }
+
+        .live-recent-badge.ok {
+            color: var(--green);
+        }
+
         @media (max-width: 860px) {
             .live-lesson-grid {
                 grid-template-columns: 1fr;
@@ -376,8 +410,7 @@
         .audio-input-grid {
             display: grid;
             grid-template-columns:
-                minmax(0, 1fr)
-                minmax(320px, 0.75fr);
+                minmax(0, 1fr) minmax(320px, 0.75fr);
 
             gap: 14px;
             align-items: stretch;
@@ -487,17 +520,16 @@
         }
 
         @keyframes record-pulse {
+
             0%,
             100% {
                 box-shadow:
-                    0 0 0 0
-                    rgba(239, 115, 115, 0.35);
+                    0 0 0 0 rgba(239, 115, 115, 0.35);
             }
 
             50% {
                 box-shadow:
-                    0 0 0 8px
-                    rgba(239, 115, 115, 0);
+                    0 0 0 8px rgba(239, 115, 115, 0);
             }
         }
 
@@ -859,12 +891,13 @@
             margin-top: 18px;
         }
 
-        details.technical > summary {
+        details.technical>summary {
             color: var(--muted);
             cursor: pointer;
         }
 
         @media (max-width: 760px) {
+
             .audio-input-grid,
             .upload-form,
             .rag-form,
@@ -918,2234 +951,2100 @@
 </head>
 
 <body>
-<main>
-    <header>
-        <h1>Audio Lab</h1>
+    <main>
+        <header>
+            <h1>Audio Lab</h1>
 
-        <p class="subtitle">
-            Transcription, Knowledge Base, and local RAG
-        </p>
-    </header>
+            <p class="subtitle">
+                Transcription, Knowledge Base, and local RAG
+            </p>
+        </header>
 
-    {% if success %}
-    <div class="notice success">
-        {{ success }}
-    </div>
-    {% endif %}
+        {% if success %}
+        <div class="notice success">
+            {{ success }}
+        </div>
+        {% endif %}
 
-    {% if error %}
-    <div class="notice error">
-        {{ error }}
-    </div>
-    {% endif %}
+        {% if error %}
+        <div class="notice error">
+            {{ error }}
+        </div>
+        {% endif %}
 
-    <section class="panel">
-        <h2>AI Platform</h2>
+        <section class="panel">
+            <h2>AI Platform</h2>
 
-        {% if status %}
-        <div class="metrics">
-            <div class="metric">
-                <span>Homelab Core</span>
+            {% if status %}
+            <div class="metrics">
+                <div class="metric">
+                    <span>Homelab Core</span>
 
-                <strong
-                    class="{{
+                    <strong class="{{
                         'ok'
                         if status.status == 'ok'
                         else 'danger'
-                    }}"
-                >
-                    {{ status.status }}
-                </strong>
-            </div>
+                    }}">
+                        {{ status.status }}
+                    </strong>
+                </div>
 
-            <div class="metric">
-                <span>Mac</span>
+                <div class="metric">
+                    <span>Mac</span>
 
-                <strong
-                    class="{{
+                    <strong class="{{
                         'ok'
                         if status.mac.online
                         else 'danger'
-                    }}"
-                >
-                    {{
+                    }}">
+                        {{
                         'Online'
                         if status.mac.online
                         else 'Offline'
-                    }}
-                </strong>
-            </div>
+                        }}
+                    </strong>
+                </div>
 
-            <div class="metric">
-                <span>LM Studio</span>
+                <div class="metric">
+                    <span>LM Studio</span>
 
-                <strong
-                    class="{{
+                    <strong class="{{
                         'ok'
                         if status.llm.lm_studio
                         else 'danger'
-                    }}"
-                >
-                    {{
+                    }}">
+                        {{
                         'Ready'
                         if status.llm.lm_studio
                         else 'Offline'
-                    }}
-                </strong>
-            </div>
+                        }}
+                    </strong>
+                </div>
 
-            <div class="metric">
-                <span>Mac Whisper</span>
+                <div class="metric">
+                    <span>Mac Whisper</span>
 
-                <strong
-                    class="
+                    <strong class="
                         {% if status.whisper.mac_running %}
                             ok
                         {% elif active_tasks %}
                             warning
                         {% endif %}
-                    "
-                >
-                    {% if status.whisper.mac_running %}
+                    ">
+                        {% if status.whisper.mac_running %}
                         Running
-                    {% elif active_tasks %}
+                        {% elif active_tasks %}
                         Starting / fallback
-                    {% else %}
+                        {% else %}
                         Sleeping
-                    {% endif %}
-                </strong>
-            </div>
+                        {% endif %}
+                    </strong>
+                </div>
 
-            <div class="metric">
-                <span>Server Whisper</span>
+                <div class="metric">
+                    <span>Server Whisper</span>
 
-                <strong
-                    class="{{
+                    <strong class="{{
                         'ok'
                         if status.whisper.server_running
                         else 'danger'
-                    }}"
-                >
-                    {{
+                    }}">
+                        {{
                         'Ready'
                         if status.whisper.server_running
                         else 'Offline'
-                    }}
-                </strong>
-            </div>
-
-            <div class="metric">
-                <span>Queue</span>
-
-                <strong>
-                    {{ status.queue.waiting }} waiting /
-                    {{ status.queue.running }} running
-                </strong>
-            </div>
-        </div>
-        {% else %}
-        <p class="danger">
-            Homelab Core недоступний.
-        </p>
-        {% endif %}
-    </section>
-
-    <section class="panel">
-        <h2>Нова транскрипція</h2>
-
-        <div class="audio-input-grid">
-            <div class="input-card">
-                <h3>Завантажити файл</h3>
-
-                <form
-                    id="upload-form"
-                    class="upload-form"
-                    action="/upload"
-                    method="post"
-                    enctype="multipart/form-data"
-                >
-                    <input
-                        id="audio-file"
-                        type="file"
-                        name="file"
-                        required
-                    >
-
-                    <button type="submit">
-                        Додати в чергу
-                    </button>
-                </form>
-
-                <p
-                    class="muted"
-                    style="margin: 10px 0 0;"
-                >
-                    Максимальний розмір:
-                    {{ max_upload_mb }} MB.
-                </p>
-            </div>
-
-            <div class="input-card">
-                <h3>Записати з мікрофона</h3>
-
-                <div class="record-controls">
-                    <button
-                        id="record-start"
-                        class="record-button"
-                        type="button"
-                    >
-                        ● Почати запис
-                    </button>
-
-                    <button
-                        id="record-stop"
-                        class="stop-button"
-                        type="button"
-                        disabled
-                    >
-                        ■ Завершити
-                    </button>
-
-                    <span
-                        id="record-timer"
-                        class="record-timer"
-                    >
-                        00:00
-                    </span>
+                        }}
+                    </strong>
                 </div>
 
-                <div
-                    id="record-status"
-                    class="record-status"
-                >
-                    Мікрофон не активний.
-                </div>
+                <div class="metric">
+                    <span>Queue</span>
 
-                <audio
-                    id="record-preview"
-                    class="record-preview"
-                    controls
-                ></audio>
-
-                <div
-                    id="record-actions"
-                    class="record-controls"
-                    style="display: none; margin-top: 12px;"
-                >
-                    <button
-                        id="record-upload"
-                        type="button"
-                    >
-                        Додати в чергу
-                    </button>
-
-                    <button
-                        id="record-delete"
-                        class="danger-button"
-                        type="button"
-                    >
-                        Видалити запис
-                    </button>
+                    <strong>
+                        {{ status.queue.waiting }} waiting /
+                        {{ status.queue.running }} running
+                    </strong>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <section class="panel" id="live-recording">
-        <h2>LIVE RECORDING</h2>
-
-        <p class="muted">
-            Запис лише системного аудіо macOS (ScreenCaptureKit).
-            Мікрофон не використовується. Чанки транскрибуються під час запису.
-        </p>
-
-        <div
-            id="live-agent-pill"
-            class="live-agent-pill"
-        >
-            Capture Agent: перевірка…
-        </div>
-
-        <div class="live-lesson-grid">
-            <div class="input-card">
-                <div class="live-form-row">
-                    <label for="live-title">Recording title</label>
-                    <input
-                        id="live-title"
-                        type="text"
-                        maxlength="200"
-                        placeholder="e.g. Zoom lecture, podcast, meeting notes"
-                    >
-                </div>
-
-                <div class="live-form-row">
-                    <label for="live-language">Мова</label>
-                    <select id="live-language">
-                        <option value="auto" selected>auto</option>
-                        <option value="uk">uk</option>
-                        <option value="en">en</option>
-                        <option value="de">de</option>
-                        <option value="pl">pl</option>
-                    </select>
-                </div>
-
-                <div class="live-controls">
-                    <button id="live-start" type="button">
-                        Start Recording
-                    </button>
-                    <button
-                        id="live-pause"
-                        class="secondary"
-                        type="button"
-                        disabled
-                    >
-                        Pause
-                    </button>
-                    <button
-                        id="live-resume"
-                        class="secondary"
-                        type="button"
-                        disabled
-                    >
-                        Resume
-                    </button>
-                    <button
-                        id="live-stop"
-                        type="button"
-                        disabled
-                    >
-                        Stop
-                    </button>
-                    <button
-                        id="live-cancel"
-                        class="danger-button"
-                        type="button"
-                        disabled
-                    >
-                        Cancel
-                    </button>
-                </div>
-
-                <p
-                    id="live-message"
-                    class="muted"
-                    style="margin: 12px 0 0;"
-                ></p>
-            </div>
-
-            <div
-                id="live-status-card"
-                class="live-status-card"
-            >
-                <div
-                    id="live-empty"
-                    class="muted"
-                >
-                    No active recording. Press Start Recording.
-                    After Stop it appears in Recent Recordings.
-                </div>
-
-                <div
-                    id="live-active"
-                    style="display: none;"
-                >
-                    <div
-                        id="live-session-title"
-                        class="live-title"
-                    ></div>
-                    <div
-                        id="live-state-line"
-                        class="live-state-line"
-                    ></div>
-
-                    <div
-                        id="live-wave"
-                        class="live-wave"
-                        aria-hidden="true"
-                        data-extension="live-audio-level"
-                    >
-                        <span></span><span></span><span></span>
-                        <span></span><span></span><span></span><span></span>
-                    </div>
-
-                    <div
-                        id="live-recorded-line"
-                        class="live-recorded-line"
-                    >
-                        Записано: 00:00:00
-                    </div>
-                    <div
-                        id="live-pause-line"
-                        class="live-pause-line"
-                        style="display: none;"
-                    >
-                        Пауза: 00:00
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="live-recent">
-            <h3>Recent Recordings</h3>
-            <p class="muted" style="margin-bottom: 0;">
-                Click a recording to open details, audio, and transcript.
+            {% else %}
+            <p class="danger">
+                Homelab Core недоступний.
             </p>
-            <div
-                id="live-recent-list"
-                class="live-recent-list"
-            ></div>
-        </div>
-    </section>
+            {% endif %}
+        </section>
 
-    <section class="panel" id="knowledge-documents">
-        <h2>Knowledge Base</h2>
-        <p class="muted">
-            Indexed documents remain manageable even if local audio was deleted.
-            Remove from Knowledge never deletes local files.
-        </p>
-        {% if knowledge_documents %}
-        <div class="task-list">
-            {% for doc in knowledge_documents %}
-            <article class="task">
-                <div class="task-info">
-                    <div class="filename" title="{{ doc.knowledge_id }}">
-                        {{ doc.title }}
-                    </div>
-                    <div class="task-meta">
-                        <span class="badge indexed">Knowledge Base ✓</span>
-                        <span>{{ doc.source_type }}</span>
-                        {% if not doc.local_assets_present %}
-                        <span class="badge">knowledge-only</span>
-                        {% endif %}
-                        <span class="muted">id: {{ doc.knowledge_id[:8] }}…</span>
-                    </div>
-                </div>
-                <div class="task-actions">
-                    <form
-                        method="post"
-                        action="/api/knowledge/documents/{{ doc.knowledge_id }}/remove-form"
-                        onsubmit="return confirm('Remove this recording from the Knowledge Base?\nLocal audio and transcripts will remain.')"
-                    >
-                        <button class="danger-button" type="submit">
-                            Remove from Knowledge
+        <section class="panel">
+            <h2>Нова транскрипція</h2>
+
+            <div class="audio-input-grid">
+                <div class="input-card">
+                    <h3>Завантажити файл</h3>
+
+                    <form id="upload-form" class="upload-form" action="/upload" method="post"
+                        enctype="multipart/form-data">
+                        <input id="audio-file" type="file" name="file" required>
+
+                        <button type="submit">
+                            Додати в чергу
                         </button>
                     </form>
+
+                    <p class="muted" style="margin: 10px 0 0;">
+                        Максимальний розмір:
+                        {{ max_upload_mb }} MB.
+                    </p>
                 </div>
-            </article>
-            {% endfor %}
-        </div>
-        {% else %}
-        <p class="empty">No Knowledge documents yet.</p>
-        {% endif %}
-    </section>
 
-    <section class="panel">
-        <h2>Запитати базу знань</h2>
+                <div class="input-card">
+                    <h3>Записати з мікрофона</h3>
 
-        <p class="muted">
-            Knowledge Base знайде релевантні транскрипції,
-            а Qwen сформує відповідь лише на основі джерел.
-        </p>
+                    <div class="record-controls">
+                        <button id="record-start" class="record-button" type="button">
+                            ● Почати запис
+                        </button>
 
-        <form
-            id="rag-form"
-            class="rag-form"
-        >
-            <textarea
-                id="rag-query"
-                class="rag-input"
-                placeholder="Наприклад: яка погода була на вулиці і що говорили про спальню?"
-                required
-            ></textarea>
+                        <button id="record-stop" class="stop-button" type="button" disabled>
+                            ■ Завершити
+                        </button>
 
-            <button
-                id="rag-submit"
-                type="submit"
-            >
-                Запитати Qwen
-            </button>
-        </form>
+                        <span id="record-timer" class="record-timer">
+                            00:00
+                        </span>
+                    </div>
 
-        <div
-            id="rag-loading"
-            class="rag-loading"
-        >
-            Пошук джерел і формування відповіді…
-        </div>
+                    <div id="record-status" class="record-status">
+                        Мікрофон не активний.
+                    </div>
 
-        <div
-            id="rag-error"
-            class="rag-error"
-        ></div>
+                    <audio id="record-preview" class="record-preview" controls></audio>
 
-        <div
-            id="rag-answer"
-            class="rag-answer"
-        >
-            <p
-                id="rag-answer-text"
-                class="rag-answer-text"
-            ></p>
+                    <div id="record-actions" class="record-controls" style="display: none; margin-top: 12px;">
+                        <button id="record-upload" type="button">
+                            Додати в чергу
+                        </button>
 
-            <div class="task-meta">
-                <span id="rag-model"></span>
-                <span id="rag-source-count"></span>
+                        <button id="record-delete" class="danger-button" type="button">
+                            Видалити запис
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" id="live-recording">
+            <h2>LIVE RECORDING</h2>
+
+            <p class="muted">
+                Запис лише системного аудіо macOS (ScreenCaptureKit).
+                Мікрофон не використовується. Чанки транскрибуються під час запису.
+            </p>
+
+            <div id="live-agent-pill" class="live-agent-pill">
+                Capture Agent: перевірка…
             </div>
 
-            <div
-                id="rag-sources"
-                class="rag-sources"
-            ></div>
-        </div>
-    </section>
-
-    <section class="panel">
-        <h2>Пошук у транскрипціях</h2>
-
-        <form
-            class="search-form"
-            method="get"
-            action="/"
-        >
-            <input
-                class="search-input"
-                type="search"
-                name="q"
-                value="{{ search_query or '' }}"
-                placeholder="Наприклад: що говорили про погоду?"
-                autocomplete="off"
-            >
-
-            <button type="submit">
-                Шукати
-            </button>
-
-            {% if search_query %}
-            <a
-                class="button secondary"
-                href="/"
-            >
-                Очистити
-            </a>
-            {% endif %}
-        </form>
-
-        {% if search_error %}
-        <div class="notice error">
-            {{ search_error }}
-        </div>
-        {% endif %}
-
-        {% if search_query and not search_error %}
-        <p
-            class="muted"
-            style="margin: 13px 0 0;"
-        >
-            Знайдено результатів:
-            {{ search_count }}
-        </p>
-
-        {% if search_results %}
-        <div class="search-results">
-            {% for result in search_results %}
-            <article class="search-result">
-                <div class="search-result-header">
-                    <div
-                        class="search-result-source"
-                        title="{{
-                            result.source_filename
-                            or 'Без назви'
-                        }}"
-                    >
-                        {{
-                            result.source_filename
-                            or 'Без назви'
-                        }}
+            <div class="live-lesson-grid">
+                <div class="input-card">
+                    <div class="live-form-row">
+                        <label for="live-title">Назва запису</label>
+                        <input id="live-title" type="text" maxlength="200"
+                            placeholder="наприклад: подкаст, лекція, інтерв’ю">
                     </div>
 
-                    <div class="search-score">
-                        {{
+                    <div class="live-form-row">
+                        <label for="live-language">Мова</label>
+                        <select id="live-language">
+                            <option value="auto" selected>auto</option>
+                            <option value="uk">uk</option>
+                            <option value="en">en</option>
+                            <option value="de">de</option>
+                            <option value="pl">pl</option>
+                        </select>
+                    </div>
+
+                    <div class="live-controls">
+                        <button id="live-start" type="button">
+                            Почати запис
+                        </button>
+                        <button id="live-pause" class="secondary" type="button" disabled>
+                            Пауза
+                        </button>
+                        <button id="live-resume" class="secondary" type="button" disabled>
+                            Продовжити
+                        </button>
+                        <button id="live-stop" type="button" disabled>
+                            Стоп
+                        </button>
+                        <button id="live-cancel" class="danger-button" type="button" disabled>
+                            Скасувати
+                        </button>
+                    </div>
+
+                    <p id="live-message" class="muted" style="margin: 12px 0 0;"></p>
+                </div>
+
+                <div id="live-status-card" class="live-status-card">
+                    <div id="live-empty" class="muted">
+                        Немає активного запису. Натисніть «Почати запис».
+                        Після «Стоп» запис з’явиться в Recent Recordings.
+                    </div>
+
+                    <div id="live-active" style="display: none;">
+                        <div id="live-session-title" class="live-title"></div>
+                        <div id="live-state-line" class="live-state-line"></div>
+
+                        <div id="live-wave" class="live-wave" aria-hidden="true" data-extension="live-audio-level">
+                            <span></span><span></span><span></span>
+                            <span></span><span></span><span></span><span></span>
+                        </div>
+
+                        <div id="live-recorded-line" class="live-recorded-line">
+                            Записано: 00:00:00
+                        </div>
+                        <div id="live-pause-line" class="live-pause-line" style="display: none;">
+                            Пауза: 00:00
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="live-recent">
+                <h3>Recent Recordings</h3>
+                <p class="muted" style="margin-bottom: 0;">
+                    Тимчасова черга: перегляд, база знань, видалення локальної копії.
+                </p>
+                <div id="live-recent-list" class="live-recent-list"></div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Запитати базу знань</h2>
+
+            <p class="muted">
+                Knowledge Base знайде релевантні транскрипції,
+                а Qwen сформує відповідь лише на основі джерел.
+            </p>
+
+            <form id="rag-form" class="rag-form">
+                <textarea id="rag-query" class="rag-input"
+                    placeholder="Наприклад: яка погода була на вулиці і що говорили про спальню?" required></textarea>
+
+                <button id="rag-submit" type="submit">
+                    Запитати Qwen
+                </button>
+            </form>
+
+            <div id="rag-loading" class="rag-loading">
+                Пошук джерел і формування відповіді…
+            </div>
+
+            <div id="rag-error" class="rag-error"></div>
+
+            <div id="rag-answer" class="rag-answer">
+                <p id="rag-answer-text" class="rag-answer-text"></p>
+
+                <div class="task-meta">
+                    <span id="rag-model"></span>
+                    <span id="rag-source-count"></span>
+                </div>
+
+                <div id="rag-sources" class="rag-sources"></div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Пошук у транскрипціях</h2>
+
+            <form class="search-form" method="get" action="/">
+                <input class="search-input" type="search" name="q" value="{{ search_query or '' }}"
+                    placeholder="Наприклад: що говорили про погоду?" autocomplete="off">
+
+                <button type="submit">
+                    Шукати
+                </button>
+
+                {% if search_query %}
+                <a class="button secondary" href="/">
+                    Очистити
+                </a>
+                {% endif %}
+            </form>
+
+            {% if search_error %}
+            <div class="notice error">
+                {{ search_error }}
+            </div>
+            {% endif %}
+
+            {% if search_query and not search_error %}
+            <p class="muted" style="margin: 13px 0 0;">
+                Знайдено результатів:
+                {{ search_count }}
+            </p>
+
+            {% if search_results %}
+            <div class="search-results">
+                {% for result in search_results %}
+                <article class="search-result">
+                    <div class="search-result-header">
+                        <div class="search-result-source" title="{{
+                            result.source_filename
+                            or 'Без назви'
+                        }}">
+                            {{
+                            result.source_filename
+                            or 'Без назви'
+                            }}
+                        </div>
+
+                        <div class="search-score">
+                            {{
                             (
-                                (result.score or 0)
-                                * 100
+                            (result.score or 0)
+                            * 100
                             )
                             | round(1)
-                        }}%
+                            }}%
+                        </div>
                     </div>
-                </div>
 
-                <p class="search-result-text">
-                    {{
+                    <p class="search-result-text">
+                        {{
                         result.text
                         or 'Текст відсутній'
-                    }}
-                </p>
-
-                <div class="search-result-meta">
-                    <span>
-                        Фрагмент:
-                        {{
-                            (result.chunk_index or 0) + 1
                         }}
-                        /
-                        {{
-                            result.chunk_count or 1
-                        }}
-                    </span>
-
-                    <span>
-                        Project:
-                        {{
-                            result.project or '—'
-                        }}
-                    </span>
-                </div>
-            </article>
-            {% endfor %}
-        </div>
-        {% else %}
-        <p
-            class="empty"
-            style="margin-top: 15px;"
-        >
-            Нічого релевантного не знайдено.
-        </p>
-        {% endif %}
-        {% endif %}
-    </section>
-
-    <section
-        id="tasks"
-        class="panel"
-    >
-        <h2>Активні задачі</h2>
-
-        {% if active_tasks %}
-        <div class="task-list">
-            {% for task in active_tasks %}
-            <article class="task">
-                <div class="task-info">
-                    <div
-                        class="filename"
-                        title="{{
-                            task.source_file
-                            or task.file_path
-                        }}"
-                    >
-                        {{
-                            task.source_file
-                            or task.file_path
-                            or 'Без назви'
-                        }}
-                    </div>
-
-                    <div class="task-meta">
-                        <span
-                            class="badge {{ task.status }}"
-                        >
-                            {{ task.status }}
-                        </span>
-
-                        <span>
-                            Спроба
-                            {{ task.attempts }}
-                            /
-                            {{ task.max_attempts }}
-                        </span>
-
-                        <span>
-                            Task: {{ task.id }}
-                        </span>
-                    </div>
-
-                    {% if task.error %}
-                    <p
-                        class="danger"
-                        style="margin: 8px 0 0;"
-                    >
-                        {{ task.error }}
                     </p>
-                    {% endif %}
-                </div>
 
-                <div class="task-actions">
-                    <span class="badge running">
-                        Обробка…
-                    </span>
-                </div>
-            </article>
-            {% endfor %}
-        </div>
-        {% else %}
-        <p class="empty">
-            Активних задач немає.
-        </p>
-        {% endif %}
-    </section>
+                    <div class="search-result-meta">
+                        <span>
+                            Фрагмент:
+                            {{
+                            (result.chunk_index or 0) + 1
+                            }}
+                            /
+                            {{
+                            result.chunk_count or 1
+                            }}
+                        </span>
 
-    <section class="panel">
-        <h2>Завершені транскрипції</h2>
+                        <span>
+                            Project:
+                            {{
+                            result.project or '—'
+                            }}
+                        </span>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="empty" style="margin-top: 15px;">
+                Нічого релевантного не знайдено.
+            </p>
+            {% endif %}
+            {% endif %}
+        </section>
 
-        {% if completed_tasks %}
-        <div class="task-list">
-            {% for task in completed_tasks %}
-            <article class="task">
-                <div class="task-info">
-                    <div
-                        class="filename"
-                        title="{{
+        <section id="tasks" class="panel">
+            <h2>Активні задачі</h2>
+
+            {% if active_tasks %}
+            <div class="task-list">
+                {% for task in active_tasks %}
+                <article class="task">
+                    <div class="task-info">
+                        <div class="filename" title="{{
                             task.source_file
                             or task.file_path
-                        }}"
-                    >
-                        {{
+                        }}">
+                            {{
                             task.source_file
                             or task.file_path
                             or 'Без назви'
-                        }}
+                            }}
+                        </div>
+
+                        <div class="task-meta">
+                            <span class="badge {{ task.status }}">
+                                {{ task.status }}
+                            </span>
+
+                            <span>
+                                Спроба
+                                {{ task.attempts }}
+                                /
+                                {{ task.max_attempts }}
+                            </span>
+
+                            <span>
+                                Task: {{ task.id }}
+                            </span>
+                        </div>
+
+                        {% if task.error %}
+                        <p class="danger" style="margin: 8px 0 0;">
+                            {{ task.error }}
+                        </p>
+                        {% endif %}
                     </div>
 
-                    <div class="task-meta">
-                        <span class="badge completed">
-                            completed
+                    <div class="task-actions">
+                        <span class="badge running">
+                            Обробка…
                         </span>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="empty">
+                Активних задач немає.
+            </p>
+            {% endif %}
+        </section>
 
-                        {% set index_status =
+        <section class="panel">
+            <h2>Завершені транскрипції</h2>
+
+            {% if completed_tasks %}
+            <div class="task-list">
+                {% for task in completed_tasks %}
+                <article class="task">
+                    <div class="task-info">
+                        <div class="filename" title="{{
+                            task.source_file
+                            or task.file_path
+                        }}">
+                            {{
+                            task.source_file
+                            or task.file_path
+                            or 'Без назви'
+                            }}
+                        </div>
+
+                        <div class="task-meta">
+                            <span class="badge completed">
+                                completed
+                            </span>
+
+                            {% set index_status =
                             task.index.index_status
                             if task.index
                             else 'not_indexed'
-                        %}
+                            %}
 
-                        <span
-                            class="badge {{ index_status }}"
-                        >
-                            Knowledge:
-                            {{ index_status }}
-                        </span>
+                            <span class="badge {{ index_status }}">
+                                База знань:
+                                {{ index_status }}
+                            </span>
 
-                        {% if
+                            {% if
                             task.index
                             and task.index.chunk_count
+                            %}
+                            <span>
+                                {{ task.index.chunk_count }}
+                                chunks
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        {% if
+                        task.index
+                        and task.index.error
                         %}
-                        <span>
-                            {{ task.index.chunk_count }}
-                            chunks
-                        </span>
+                        <p class="danger" style="margin: 8px 0 0;">
+                            {{ task.index.error }}
+                        </p>
                         {% endif %}
                     </div>
 
-                    {% if
-                        task.index
-                        and task.index.error
-                    %}
-                    <p
-                        class="danger"
-                        style="margin: 8px 0 0;"
-                    >
-                        {{ task.index.error }}
-                    </p>
-                    {% endif %}
-                </div>
-
-                <div class="task-actions">
-                    {% set output_files =
+                    <div class="task-actions">
+                        {% set output_files =
                         task.result.output_files
                         if task.result
                         and task.result.output_files
                         else []
-                    %}
+                        %}
 
-                    {% for output in output_files %}
+                        {% for output in output_files %}
                         {% set output_name =
-                            output.split('/')[-1]
+                        output.split('/')[-1]
                         %}
 
                         {% if output_name.endswith('.txt') %}
-                        <a
-                            class="button"
-                            href="/view/ready/{{ output_name }}"
-                        >
+                        <a class="button" href="/view/ready/{{ output_name }}">
                             Відкрити TXT
                         </a>
                         {% endif %}
 
                         {% if output_name.endswith('.json') %}
-                        <a
-                            class="button secondary"
-                            href="/view/ready/{{ output_name }}"
-                        >
+                        <a class="button secondary" href="/view/ready/{{ output_name }}">
                             JSON
                         </a>
                         {% endif %}
-                    {% endfor %}
+                        {% endfor %}
 
-                    {% if
+                        {% if
                         not task.index
                         or task.index.index_status
                         in ['not_indexed', 'failed']
-                    %}
-                    <form
-                        method="post"
-                        action="/tasks/{{ task.id }}/index"
-                    >
-                        <button type="submit">
-                            Add to Knowledge
-                        </button>
-                    </form>
-                    {% else %}
-                    <form
-                        method="post"
-                        action="/tasks/{{ task.id }}/reindex"
-                    >
-                        <button
-                            class="secondary"
-                            type="submit"
-                        >
-                            Reindex
-                        </button>
-                    </form>
+                        %}
+                        <form method="post" action="/tasks/{{ task.id }}/index">
+                            <button type="submit">
+                                Додати в базу знань
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="knowledge-ok" style="color: var(--green); font-size: 14px;">
+                            База знань: Додано ✓
+                        </span>
+                        {% endif %}
 
-                    <form
-                        method="post"
-                        action="/tasks/{{ task.id }}/unindex"
-                        onsubmit="
-                            return confirm(
-                                'Remove this recording from the Knowledge Base?\nLocal audio and transcripts will remain.'
-                            )
-                        "
-                    >
-                        <button
-                            class="danger-button"
-                            type="submit"
-                        >
-                            Remove from Knowledge
-                        </button>
-                    </form>
-                    {% endif %}
-                </div>
-            </article>
-            {% endfor %}
-        </div>
-        {% else %}
-        <p class="empty">
-            Завершених транскрипцій немає.
-        </p>
-        {% endif %}
-    </section>
+                        <form method="post" action="/tasks/{{ task.id }}/local-delete" class="local-delete-form"
+                            onsubmit="return confirm(this.dataset.confirmMessage)"
+                            data-confirm-message="{% set k_state = task.knowledge or {} %}{% if k_state.indexed %}Матеріал є в базі знань. Локальне аудіо та транскрипція будуть видалені, але інформація в базі знань залишиться. Продовжити?{% else %}Видалити аудіо та локальну транскрипцію?{% endif %}">
+                            <button class="danger-button" type="submit">
+                                Видалити локально
+                            </button>
+                        </form>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="empty">
+                Завершених транскрипцій немає.
+            </p>
+            {% endif %}
+        </section>
 
-    {% if failed_tasks %}
-    <section class="panel">
-        <h2>Помилки</h2>
+        {% if failed_tasks %}
+        <section class="panel">
+            <h2>Помилки</h2>
 
-        <div class="task-list">
-            {% for task in failed_tasks %}
-            <article class="task">
-                <div class="task-info">
-                    <div class="filename">
-                        {{
+            <div class="task-list">
+                {% for task in failed_tasks %}
+                <article class="task">
+                    <div class="task-info">
+                        <div class="filename">
+                            {{
                             task.source_file
                             or task.file_path
                             or 'Без назви'
-                        }}
+                            }}
+                        </div>
+
+                        <div class="task-meta">
+                            <span class="badge failed">
+                                failed
+                            </span>
+
+                            <span>
+                                Task: {{ task.id }}
+                            </span>
+                        </div>
+
+                        {% if task.error %}
+                        <p class="danger" style="margin: 8px 0 0;">
+                            {{ task.error }}
+                        </p>
+                        {% endif %}
                     </div>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
 
-                    <div class="task-meta">
-                        <span class="badge failed">
-                            failed
-                        </span>
+        <section class="panel">
+            <h2>Архів аудіо</h2>
 
-                        <span>
-                            Task: {{ task.id }}
-                        </span>
-                    </div>
+            {% set archive_files = folders.archive %}
 
-                    {% if task.error %}
-                    <p
-                        class="danger"
-                        style="margin: 8px 0 0;"
-                    >
-                        {{ task.error }}
-                    </p>
-                    {% endif %}
-                </div>
-            </article>
-            {% endfor %}
-        </div>
-    </section>
-    {% endif %}
+            {% if archive_files %}
+            <table class="file-table">
+                <thead>
+                    <tr>
+                        <th class="file-name-cell">
+                            Файл
+                        </th>
 
-    <section class="panel">
-        <h2>Архів аудіо</h2>
+                        <th class="file-size-cell">
+                            Розмір
+                        </th>
 
-        {% set archive_files = folders.archive %}
+                        <th class="file-actions-cell">
+                            Дії
+                        </th>
+                    </tr>
+                </thead>
 
-        {% if archive_files %}
-        <table class="file-table">
-            <thead>
-                <tr>
-                    <th class="file-name-cell">
-                        Файл
-                    </th>
+                <tbody>
+                    {% for file in archive_files %}
+                    <tr>
+                        <td class="file-name-cell">
+                            <span class="file-name" title="{{ file.name }}">
+                                {{ file.name }}
+                            </span>
+                        </td>
 
-                    <th class="file-size-cell">
-                        Розмір
-                    </th>
-
-                    <th class="file-actions-cell">
-                        Дії
-                    </th>
-                </tr>
-            </thead>
-
-            <tbody>
-            {% for file in archive_files %}
-                <tr>
-                    <td class="file-name-cell">
-                        <span
-                            class="file-name"
-                            title="{{ file.name }}"
-                        >
-                            {{ file.name }}
-                        </span>
-                    </td>
-
-                    <td class="file-size-cell">
-                        {{
+                        <td class="file-size-cell">
+                            {{
                             (
-                                file.size
-                                / 1024
-                                / 1024
+                            file.size
+                            / 1024
+                            / 1024
                             )
                             | round(2)
-                        }}
-                        MB
-                    </td>
+                            }}
+                            MB
+                        </td>
 
-                    <td class="file-actions-cell">
-                        <div class="file-actions">
-                            <a
-                                class="button secondary"
-                                href="/file/archive/{{ file.name }}"
-                            >
-                                Завантажити
-                            </a>
+                        <td class="file-actions-cell">
+                            <div class="file-actions">
+                                <a class="button secondary" href="/file/archive/{{ file.name }}">
+                                    Завантажити
+                                </a>
 
-                            <form
-                                method="post"
-                                action="/delete/archive/{{ file.name }}"
-                                onsubmit="return confirm(this.dataset.confirmMessage)"
-                                data-confirm-message="{% if file.knowledge_indexed %}This recording is indexed in the Knowledge Base.
-Audio and local transcription will be removed.
-Knowledge Base data will remain.
-Continue?{% else %}Delete local audio file? Knowledge Base data is never cascade-deleted.{% endif %}"
-                            >
-                                <button
-                                    class="danger-button"
-                                    type="submit"
-                                >
-                                    Delete Recording
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p class="empty">
-            Архів порожній.
-        </p>
-        {% endif %}
-    </section>
+                                <form method="post" action="/delete/archive/{{ file.name }}"
+                                    onsubmit="return confirm(this.dataset.confirmMessage)" data-confirm-message="{% if file.knowledge_indexed %}Цей запис уже додано в базу знань.
+Локальне аудіо та транскрипція будуть видалені,
+але інформація залишиться в базі знань.
+Продовжити?{% else %}Видалити цей запис разом з аудіо та транскрипцією?{% endif %}">
+                                    <button class="danger-button" type="submit">
+                                        Видалити запис
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty">
+                Архів порожній.
+            </p>
+            {% endif %}
+        </section>
 
-    <details class="panel technical">
-        <summary>
-            Технічні папки
-        </summary>
+        <details class="panel technical">
+            <summary>
+                Технічні папки
+            </summary>
 
-        <p style="margin: 15px 0 0;">
-            incoming:
-            {{ folders.incoming | length }}
-            · processing:
-            {{ folders.processing | length }}
-            · ready:
-            {{ folders.ready | length }}
-            · failed:
-            {{ folders.failed | length }}
-        </p>
-    </details>
-</main>
+            <p style="margin: 15px 0 0;">
+                incoming:
+                {{ folders.incoming | length }}
+                · processing:
+                {{ folders.processing | length }}
+                · ready:
+                {{ folders.ready | length }}
+                · failed:
+                {{ folders.failed | length }}
+            </p>
+        </details>
+    </main>
 
-<script>
-    const fileInput =
-        document.getElementById("audio-file");
+    <script>
+        const fileInput =
+            document.getElementById("audio-file");
 
-    const uploadForm =
-        document.getElementById("upload-form");
+        const uploadForm =
+            document.getElementById("upload-form");
 
-    const searchInput =
-        document.querySelector(".search-input");
+        const searchInput =
+            document.querySelector(".search-input");
 
-    const recordStart =
-        document.getElementById("record-start");
+        const recordStart =
+            document.getElementById("record-start");
 
-    const recordStop =
-        document.getElementById("record-stop");
+        const recordStop =
+            document.getElementById("record-stop");
 
-    const recordTimer =
-        document.getElementById("record-timer");
+        const recordTimer =
+            document.getElementById("record-timer");
 
-    const recordStatus =
-        document.getElementById("record-status");
+        const recordStatus =
+            document.getElementById("record-status");
 
-    const recordPreview =
-        document.getElementById("record-preview");
+        const recordPreview =
+            document.getElementById("record-preview");
 
-    const recordActions =
-        document.getElementById("record-actions");
+        const recordActions =
+            document.getElementById("record-actions");
 
-    const recordUpload =
-        document.getElementById("record-upload");
+        const recordUpload =
+            document.getElementById("record-upload");
 
-    const recordDelete =
-        document.getElementById("record-delete");
+        const recordDelete =
+            document.getElementById("record-delete");
 
-    const ragForm =
-        document.getElementById("rag-form");
+        const ragForm =
+            document.getElementById("rag-form");
 
-    const ragQuery =
-        document.getElementById("rag-query");
+        const ragQuery =
+            document.getElementById("rag-query");
 
-    const ragSubmit =
-        document.getElementById("rag-submit");
+        const ragSubmit =
+            document.getElementById("rag-submit");
 
-    const ragLoading =
-        document.getElementById("rag-loading");
+        const ragLoading =
+            document.getElementById("rag-loading");
 
-    const ragError =
-        document.getElementById("rag-error");
+        const ragError =
+            document.getElementById("rag-error");
 
-    const ragAnswer =
-        document.getElementById("rag-answer");
+        const ragAnswer =
+            document.getElementById("rag-answer");
 
-    const ragAnswerText =
-        document.getElementById("rag-answer-text");
+        const ragAnswerText =
+            document.getElementById("rag-answer-text");
 
-    const ragModel =
-        document.getElementById("rag-model");
+        const ragModel =
+            document.getElementById("rag-model");
 
-    const ragSourceCount =
-        document.getElementById("rag-source-count");
+        const ragSourceCount =
+            document.getElementById("rag-source-count");
 
-    const ragSources =
-        document.getElementById("rag-sources");
+        const ragSources =
+            document.getElementById("rag-sources");
 
-    const hasActiveTasks =
-        {{ 'true' if active_tasks else 'false' }};
+        const hasActiveTasks =
+            {{ 'true' if active_tasks else 'false' }};
 
-    let mediaRecorder = null;
-    let mediaStream = null;
-    let recordedChunks = [];
+        let mediaRecorder = null;
+        let mediaStream = null;
+        let recordedChunks = [];
 
-    let recordedBlob = null;
-    let recordedMimeType = "";
-    let recordedObjectUrl = null;
+        let recordedBlob = null;
+        let recordedMimeType = "";
+        let recordedObjectUrl = null;
 
-    let recordingStartedAt = null;
-    let timerHandle = null;
+        let recordingStartedAt = null;
+        let timerHandle = null;
 
-    let recordingActive = false;
-    let uploadInProgress = false;
-    let ragInProgress = false;
+        let recordingActive = false;
+        let uploadInProgress = false;
+        let ragInProgress = false;
 
-    function formatDuration(totalSeconds) {
-        const minutes =
-            Math.floor(totalSeconds / 60)
-                .toString()
-                .padStart(2, "0");
+        function formatDuration(totalSeconds) {
+            const minutes =
+                Math.floor(totalSeconds / 60)
+                    .toString()
+                    .padStart(2, "0");
 
-        const seconds =
-            Math.floor(totalSeconds % 60)
-                .toString()
-                .padStart(2, "0");
+            const seconds =
+                Math.floor(totalSeconds % 60)
+                    .toString()
+                    .padStart(2, "0");
 
-        return `${minutes}:${seconds}`;
-    }
-
-    function updateTimer() {
-        if (!recordingStartedAt) {
-            recordTimer.textContent = "00:00";
-            return;
+            return `${minutes}:${seconds}`;
         }
 
-        const elapsed = Math.floor(
-            (Date.now() - recordingStartedAt)
-            / 1000
-        );
-
-        recordTimer.textContent =
-            formatDuration(elapsed);
-    }
-
-    function chooseRecordingMimeType() {
-        const candidates = [
-            "audio/webm;codecs=opus",
-            "audio/webm",
-            "audio/mp4",
-        ];
-
-        for (const mimeType of candidates) {
-            if (
-                window.MediaRecorder
-                && MediaRecorder.isTypeSupported(mimeType)
-            ) {
-                return mimeType;
+        function updateTimer() {
+            if (!recordingStartedAt) {
+                recordTimer.textContent = "00:00";
+                return;
             }
-        }
 
-        return "";
-    }
-
-    function extensionForMimeType(mimeType) {
-        if (mimeType.includes("mp4")) {
-            return "m4a";
-        }
-
-        if (mimeType.includes("ogg")) {
-            return "ogg";
-        }
-
-        return "webm";
-    }
-
-    function resetRecordedDraft() {
-        if (recordedObjectUrl) {
-            URL.revokeObjectURL(recordedObjectUrl);
-        }
-
-        recordedBlob = null;
-        recordedMimeType = "";
-        recordedObjectUrl = null;
-        recordedChunks = [];
-
-        recordPreview.pause();
-        recordPreview.removeAttribute("src");
-        recordPreview.load();
-        recordPreview.style.display = "none";
-
-        recordActions.style.display = "none";
-
-        recordStart.disabled = false;
-        recordStop.disabled = true;
-        recordUpload.disabled = false;
-        recordDelete.disabled = false;
-
-        recordTimer.textContent = "00:00";
-    }
-
-    async function uploadRecording(
-        blob,
-        mimeType
-    ) {
-        uploadInProgress = true;
-
-        recordStatus.textContent =
-            "Завантаження запису на сервер…";
-
-        const timestamp =
-            new Date()
-                .toISOString()
-                .replaceAll(":", "-")
-                .replaceAll(".", "-");
-
-        const extension =
-            extensionForMimeType(mimeType);
-
-        const filename =
-            `recording-${timestamp}.${extension}`;
-
-        const formData = new FormData();
-
-        formData.append(
-            "file",
-            new File(
-                [blob],
-                filename,
-                {
-                    type:
-                        mimeType
-                        || blob.type
-                        || "audio/webm",
-                }
-            )
-        );
-
-        try {
-            const response = await fetch(
-                "/upload",
-                {
-                    method: "POST",
-                    body: formData,
-                }
+            const elapsed = Math.floor(
+                (Date.now() - recordingStartedAt)
+                / 1000
             );
 
-            if (!response.ok) {
-                const message =
-                    await response.text();
+            recordTimer.textContent =
+                formatDuration(elapsed);
+        }
 
-                throw new Error(
-                    message
-                    || `HTTP ${response.status}`
-                );
+        function chooseRecordingMimeType() {
+            const candidates = [
+                "audio/webm;codecs=opus",
+                "audio/webm",
+                "audio/mp4",
+            ];
+
+            for (const mimeType of candidates) {
+                if (
+                    window.MediaRecorder
+                    && MediaRecorder.isTypeSupported(mimeType)
+                ) {
+                    return mimeType;
+                }
             }
 
-            recordStatus.textContent =
-                "Запис додано в чергу транскрипції.";
-
-            window.setTimeout(() => {
-                window.location.href =
-                    "/?success="
-                    + encodeURIComponent(
-                        "Запис із мікрофона додано в чергу."
-                    )
-                    + "#tasks";
-            }, 500);
-
-        } catch (error) {
-            uploadInProgress = false;
-
-            recordStatus.textContent =
-                "Не вдалося завантажити запис: "
-                + error.message;
-
-            recordStart.disabled = false;
-            recordUpload.disabled = false;
-            recordDelete.disabled = false;
-        }
-    }
-
-    async function startRecording() {
-        resetRecordedDraft();
-
-        if (!window.isSecureContext) {
-            recordStatus.textContent =
-                "Запис із мікрофона потребує HTTPS.";
-
-            return;
+            return "";
         }
 
-        if (
-            !navigator.mediaDevices
-            || !navigator.mediaDevices.getUserMedia
-        ) {
-            recordStatus.textContent =
-                "Браузер не надає доступу до мікрофона.";
+        function extensionForMimeType(mimeType) {
+            if (mimeType.includes("mp4")) {
+                return "m4a";
+            }
 
-            return;
+            if (mimeType.includes("ogg")) {
+                return "ogg";
+            }
+
+            return "webm";
         }
 
-        if (!window.MediaRecorder) {
-            recordStatus.textContent =
-                "Браузер не підтримує MediaRecorder.";
+        function resetRecordedDraft() {
+            if (recordedObjectUrl) {
+                URL.revokeObjectURL(recordedObjectUrl);
+            }
 
-            return;
-        }
-
-        try {
-            mediaStream =
-                await navigator.mediaDevices.getUserMedia(
-                    {
-                        audio: {
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true,
-                        },
-                    }
-                );
-
-            const mimeType =
-                chooseRecordingMimeType();
-
-            mediaRecorder = mimeType
-                ? new MediaRecorder(
-                    mediaStream,
-                    { mimeType }
-                )
-                : new MediaRecorder(mediaStream);
-
+            recordedBlob = null;
+            recordedMimeType = "";
+            recordedObjectUrl = null;
             recordedChunks = [];
 
-            mediaRecorder.addEventListener(
-                "dataavailable",
-                (event) => {
-                    if (
-                        event.data
-                        && event.data.size > 0
-                    ) {
-                        recordedChunks.push(
-                            event.data
-                        );
-                    }
-                }
-            );
+            recordPreview.pause();
+            recordPreview.removeAttribute("src");
+            recordPreview.load();
+            recordPreview.style.display = "none";
 
-            mediaRecorder.addEventListener(
-                "stop",
-                () => {
-                    const actualMimeType =
-                        mediaRecorder.mimeType
-                        || mimeType
-                        || "audio/webm";
+            recordActions.style.display = "none";
 
-                    const blob = new Blob(
-                        recordedChunks,
-                        {
-                            type: actualMimeType,
-                        }
-                    );
+            recordStart.disabled = false;
+            recordStop.disabled = true;
+            recordUpload.disabled = false;
+            recordDelete.disabled = false;
 
-                    if (blob.size === 0) {
-                        recordStatus.textContent =
-                            "Запис порожній.";
-
-                        recordStart.disabled = false;
-                        recordStop.disabled = true;
-
-                        return;
-                    }
-
-                    recordedBlob = blob;
-                    recordedMimeType =
-                        actualMimeType;
-
-                    recordedObjectUrl =
-                        URL.createObjectURL(blob);
-
-                    recordPreview.src =
-                        recordedObjectUrl;
-
-                    recordPreview.style.display =
-                        "block";
-
-                    recordActions.style.display =
-                        "flex";
-
-                    recordStart.disabled = false;
-                    recordStop.disabled = true;
-                    recordUpload.disabled = false;
-                    recordDelete.disabled = false;
-
-                    recordStatus.textContent =
-                        "Запис готовий. "
-                        + "Прослухайте його, "
-                        + "потім додайте в чергу "
-                        + "або видаліть.";
-                }
-            );
-
-            mediaRecorder.start(1000);
-
-            recordingActive = true;
-            recordingStartedAt = Date.now();
-
-            timerHandle =
-                window.setInterval(
-                    updateTimer,
-                    250
-                );
-
-            recordStart.disabled = true;
-            recordStop.disabled = false;
-
-            recordStart.classList.add(
-                "recording"
-            );
-
-            recordStatus.textContent =
-                "Йде запис…";
-
-        } catch (error) {
-            recordStatus.textContent =
-                "Немає доступу до мікрофона: "
-                + error.message;
+            recordTimer.textContent = "00:00";
         }
-    }
 
-    function stopRecording() {
-        if (
-            !mediaRecorder
-            || mediaRecorder.state === "inactive"
+        async function uploadRecording(
+            blob,
+            mimeType
         ) {
-            return;
-        }
-
-        mediaRecorder.stop();
-
-        if (mediaStream) {
-            for (
-                const track
-                of mediaStream.getTracks()
-            ) {
-                track.stop();
-            }
-        }
-
-        recordingActive = false;
-        recordingStartedAt = null;
-
-        window.clearInterval(timerHandle);
-        updateTimer();
-
-        recordStop.disabled = true;
-
-        recordStart.classList.remove(
-            "recording"
-        );
-
-        recordStatus.textContent =
-            "Запис завершено. "
-            + "Підготовка прослуховування…";
-    }
-
-    recordStart.addEventListener(
-        "click",
-        startRecording
-    );
-
-    recordStop.addEventListener(
-        "click",
-        stopRecording
-    );
-
-    recordUpload.addEventListener(
-        "click",
-        async () => {
-            if (!recordedBlob) {
-                recordStatus.textContent =
-                    "Немає готового запису.";
-
-                return;
-            }
-
-            recordUpload.disabled = true;
-            recordDelete.disabled = true;
-            recordStart.disabled = true;
-
-            await uploadRecording(
-                recordedBlob,
-                recordedMimeType
-                || recordedBlob.type
-                || "audio/webm"
-            );
-        }
-    );
-
-    recordDelete.addEventListener(
-        "click",
-        () => {
-            resetRecordedDraft();
+            uploadInProgress = true;
 
             recordStatus.textContent =
-                "Запис видалено. "
-                + "Можна зробити новий.";
-        }
-    );
+                "Завантаження запису на сервер…";
 
-    uploadForm.addEventListener(
-        "submit",
-        () => {
-            uploadInProgress = true;
-        }
-    );
+            const timestamp =
+                new Date()
+                    .toISOString()
+                    .replaceAll(":", "-")
+                    .replaceAll(".", "-");
 
-    function clearRagResults() {
-        ragError.style.display = "none";
-        ragError.textContent = "";
+            const extension =
+                extensionForMimeType(mimeType);
 
-        ragAnswer.style.display = "none";
+            const filename =
+                `recording-${timestamp}.${extension}`;
 
-        ragAnswerText.textContent = "";
-        ragModel.textContent = "";
-        ragSourceCount.textContent = "";
+            const formData = new FormData();
 
-        ragSources.replaceChildren();
-    }
-
-    function createSourceElement(source) {
-        const container =
-            document.createElement("div");
-
-        container.className = "rag-source";
-
-        const header =
-            document.createElement("button");
-
-        header.type = "button";
-        header.className =
-            "rag-source-toggle";
-
-        header.setAttribute(
-            "aria-expanded",
-            "false"
-        );
-
-        const name =
-            document.createElement("span");
-
-        name.className =
-            "rag-source-name";
-
-        const sourceNumber =
-            source.number !== undefined
-                ? source.number
-                : "?";
-
-        name.textContent =
-            `[Джерело ${sourceNumber}] `
-            + (
-                source.source_filename
-                || "Без назви"
-            );
-
-        name.title =
-            source.source_filename
-            || "";
-
-        const rightSide =
-            document.createElement("span");
-
-        rightSide.className =
-            "rag-source-right";
-
-        const score =
-            document.createElement("span");
-
-        score.className =
-            "rag-source-score";
-
-        const numericScore =
-            Number(source.score || 0);
-
-        score.textContent =
-            `${(numericScore * 100).toFixed(1)}%`;
-
-        const arrow =
-            document.createElement("span");
-
-        arrow.className =
-            "rag-source-arrow";
-
-        arrow.textContent =
-            "Показати джерело ▾";
-
-        rightSide.append(
-            score,
-            arrow
-        );
-
-        header.append(
-            name,
-            rightSide
-        );
-
-        const body =
-            document.createElement("div");
-
-        body.className =
-            "rag-source-body";
-
-        const sourceText =
-            document.createElement("p");
-
-        sourceText.className =
-            "rag-source-text";
-
-        sourceText.textContent =
-            source.text
-            || "Текст джерела відсутній.";
-
-        const metadata =
-            document.createElement("div");
-
-        metadata.className =
-            "task-meta";
-
-        const chunk =
-            document.createElement("span");
-
-        chunk.textContent =
-            "Фрагмент "
-            + (
-                (
-                    Number(
-                        source.chunk_index
-                    )
-                    || 0
+            formData.append(
+                "file",
+                new File(
+                    [blob],
+                    filename,
+                    {
+                        type:
+                            mimeType
+                            || blob.type
+                            || "audio/webm",
+                    }
                 )
-                + 1
-            )
-            + " / "
-            + (
-                Number(
-                    source.chunk_count
-                )
-                || 1
             );
-
-        const type =
-            document.createElement("span");
-
-        type.textContent =
-            "Тип: "
-            + (
-                source.source_type
-                || "—"
-            );
-
-        metadata.append(
-            chunk,
-            type
-        );
-
-        body.append(
-            sourceText,
-            metadata
-        );
-
-        header.addEventListener(
-            "click",
-            () => {
-                const opening =
-                    !body.classList.contains(
-                        "open"
-                    );
-
-                body.classList.toggle(
-                    "open",
-                    opening
-                );
-
-                header.setAttribute(
-                    "aria-expanded",
-                    opening
-                        ? "true"
-                        : "false"
-                );
-
-                arrow.textContent =
-                    opening
-                        ? "Сховати джерело ▴"
-                        : "Показати джерело ▾";
-            }
-        );
-
-        container.append(
-            header,
-            body
-        );
-
-        return container;
-    }
-
-    ragForm.addEventListener(
-        "submit",
-        async (event) => {
-            event.preventDefault();
-
-            const query =
-                ragQuery.value.trim();
-
-            if (!query) {
-                return;
-            }
-
-            clearRagResults();
-
-            ragInProgress = true;
-
-            ragSubmit.disabled = true;
-            ragQuery.disabled = true;
-
-            ragLoading.style.display =
-                "block";
 
             try {
                 const response = await fetch(
-                    "/api/knowledge/chat",
+                    "/upload",
                     {
                         method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json",
-                        },
-
-                        body: JSON.stringify({
-                            query,
-                            limit: 5,
-                            temperature: 0.1,
-                        }),
+                        body: formData,
                     }
                 );
 
-                let payload = {};
-
-                try {
-                    payload =
-                        await response.json();
-                } catch {
-                    payload = {};
-                }
-
                 if (!response.ok) {
+                    const message =
+                        await response.text();
+
                     throw new Error(
-                        payload.detail
+                        message
                         || `HTTP ${response.status}`
                     );
                 }
 
-                ragAnswerText.textContent =
-                    payload.answer
-                    || "Відповідь порожня.";
+                recordStatus.textContent =
+                    "Запис додано в чергу транскрипції.";
 
-                ragModel.textContent =
-                    "Модель: "
-                    + (
-                        payload.model
-                        || "qwen-general"
-                    );
-
-                const sources =
-                    Array.isArray(
-                        payload.sources
-                    )
-                        ? payload.sources
-                        : [];
-
-                ragSourceCount.textContent =
-                    `Джерел: ${sources.length}`;
-
-                for (const source of sources) {
-                    const sourceElement =
-                        createSourceElement(
-                            source
-                        );
-
-                    ragSources.appendChild(
-                        sourceElement
-                    );
-                }
-
-                ragAnswer.style.display =
-                    "block";
+                window.setTimeout(() => {
+                    window.location.href =
+                        "/?success="
+                        + encodeURIComponent(
+                            "Запис із мікрофона додано в чергу."
+                        )
+                        + "#tasks";
+                }, 500);
 
             } catch (error) {
-                ragError.textContent =
-                    "Не вдалося отримати відповідь: "
+                uploadInProgress = false;
+
+                recordStatus.textContent =
+                    "Не вдалося завантажити запис: "
                     + error.message;
 
-                ragError.style.display =
-                    "block";
+                recordStart.disabled = false;
+                recordUpload.disabled = false;
+                recordDelete.disabled = false;
+            }
+        }
 
-            } finally {
-                ragInProgress = false;
+        async function startRecording() {
+            resetRecordedDraft();
+
+            if (!window.isSecureContext) {
+                recordStatus.textContent =
+                    "Запис із мікрофона потребує HTTPS.";
+
+                return;
+            }
+
+            if (
+                !navigator.mediaDevices
+                || !navigator.mediaDevices.getUserMedia
+            ) {
+                recordStatus.textContent =
+                    "Браузер не надає доступу до мікрофона.";
+
+                return;
+            }
+
+            if (!window.MediaRecorder) {
+                recordStatus.textContent =
+                    "Браузер не підтримує MediaRecorder.";
+
+                return;
+            }
+
+            try {
+                mediaStream =
+                    await navigator.mediaDevices.getUserMedia(
+                        {
+                            audio: {
+                                echoCancellation: true,
+                                noiseSuppression: true,
+                                autoGainControl: true,
+                            },
+                        }
+                    );
+
+                const mimeType =
+                    chooseRecordingMimeType();
+
+                mediaRecorder = mimeType
+                    ? new MediaRecorder(
+                        mediaStream,
+                        { mimeType }
+                    )
+                    : new MediaRecorder(mediaStream);
+
+                recordedChunks = [];
+
+                mediaRecorder.addEventListener(
+                    "dataavailable",
+                    (event) => {
+                        if (
+                            event.data
+                            && event.data.size > 0
+                        ) {
+                            recordedChunks.push(
+                                event.data
+                            );
+                        }
+                    }
+                );
+
+                mediaRecorder.addEventListener(
+                    "stop",
+                    () => {
+                        const actualMimeType =
+                            mediaRecorder.mimeType
+                            || mimeType
+                            || "audio/webm";
+
+                        const blob = new Blob(
+                            recordedChunks,
+                            {
+                                type: actualMimeType,
+                            }
+                        );
+
+                        if (blob.size === 0) {
+                            recordStatus.textContent =
+                                "Запис порожній.";
+
+                            recordStart.disabled = false;
+                            recordStop.disabled = true;
+
+                            return;
+                        }
+
+                        recordedBlob = blob;
+                        recordedMimeType =
+                            actualMimeType;
+
+                        recordedObjectUrl =
+                            URL.createObjectURL(blob);
+
+                        recordPreview.src =
+                            recordedObjectUrl;
+
+                        recordPreview.style.display =
+                            "block";
+
+                        recordActions.style.display =
+                            "flex";
+
+                        recordStart.disabled = false;
+                        recordStop.disabled = true;
+                        recordUpload.disabled = false;
+                        recordDelete.disabled = false;
+
+                        recordStatus.textContent =
+                            "Запис готовий. "
+                            + "Прослухайте його, "
+                            + "потім додайте в чергу "
+                            + "або видаліть.";
+                    }
+                );
+
+                mediaRecorder.start(1000);
+
+                recordingActive = true;
+                recordingStartedAt = Date.now();
+
+                timerHandle =
+                    window.setInterval(
+                        updateTimer,
+                        250
+                    );
+
+                recordStart.disabled = true;
+                recordStop.disabled = false;
+
+                recordStart.classList.add(
+                    "recording"
+                );
+
+                recordStatus.textContent =
+                    "Йде запис…";
+
+            } catch (error) {
+                recordStatus.textContent =
+                    "Немає доступу до мікрофона: "
+                    + error.message;
+            }
+        }
+
+        function stopRecording() {
+            if (
+                !mediaRecorder
+                || mediaRecorder.state === "inactive"
+            ) {
+                return;
+            }
+
+            mediaRecorder.stop();
+
+            if (mediaStream) {
+                for (
+                    const track
+                    of mediaStream.getTracks()
+                ) {
+                    track.stop();
+                }
+            }
+
+            recordingActive = false;
+            recordingStartedAt = null;
+
+            window.clearInterval(timerHandle);
+            updateTimer();
+
+            recordStop.disabled = true;
+
+            recordStart.classList.remove(
+                "recording"
+            );
+
+            recordStatus.textContent =
+                "Запис завершено. "
+                + "Підготовка прослуховування…";
+        }
+
+        recordStart.addEventListener(
+            "click",
+            startRecording
+        );
+
+        recordStop.addEventListener(
+            "click",
+            stopRecording
+        );
+
+        recordUpload.addEventListener(
+            "click",
+            async () => {
+                if (!recordedBlob) {
+                    recordStatus.textContent =
+                        "Немає готового запису.";
+
+                    return;
+                }
+
+                recordUpload.disabled = true;
+                recordDelete.disabled = true;
+                recordStart.disabled = true;
+
+                await uploadRecording(
+                    recordedBlob,
+                    recordedMimeType
+                    || recordedBlob.type
+                    || "audio/webm"
+                );
+            }
+        );
+
+        recordDelete.addEventListener(
+            "click",
+            () => {
+                resetRecordedDraft();
+
+                recordStatus.textContent =
+                    "Запис видалено. "
+                    + "Можна зробити новий.";
+            }
+        );
+
+        uploadForm.addEventListener(
+            "submit",
+            () => {
+                uploadInProgress = true;
+            }
+        );
+
+        function clearRagResults() {
+            ragError.style.display = "none";
+            ragError.textContent = "";
+
+            ragAnswer.style.display = "none";
+
+            ragAnswerText.textContent = "";
+            ragModel.textContent = "";
+            ragSourceCount.textContent = "";
+
+            ragSources.replaceChildren();
+        }
+
+        function createSourceElement(source) {
+            const container =
+                document.createElement("div");
+
+            container.className = "rag-source";
+
+            const header =
+                document.createElement("button");
+
+            header.type = "button";
+            header.className =
+                "rag-source-toggle";
+
+            header.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+
+            const name =
+                document.createElement("span");
+
+            name.className =
+                "rag-source-name";
+
+            const sourceNumber =
+                source.number !== undefined
+                    ? source.number
+                    : "?";
+
+            name.textContent =
+                `[Джерело ${sourceNumber}] `
+                + (
+                    source.source_filename
+                    || "Без назви"
+                );
+
+            name.title =
+                source.source_filename
+                || "";
+
+            const rightSide =
+                document.createElement("span");
+
+            rightSide.className =
+                "rag-source-right";
+
+            const score =
+                document.createElement("span");
+
+            score.className =
+                "rag-source-score";
+
+            const numericScore =
+                Number(source.score || 0);
+
+            score.textContent =
+                `${(numericScore * 100).toFixed(1)}%`;
+
+            const arrow =
+                document.createElement("span");
+
+            arrow.className =
+                "rag-source-arrow";
+
+            arrow.textContent =
+                "Показати джерело ▾";
+
+            rightSide.append(
+                score,
+                arrow
+            );
+
+            header.append(
+                name,
+                rightSide
+            );
+
+            const body =
+                document.createElement("div");
+
+            body.className =
+                "rag-source-body";
+
+            const sourceText =
+                document.createElement("p");
+
+            sourceText.className =
+                "rag-source-text";
+
+            sourceText.textContent =
+                source.text
+                || "Текст джерела відсутній.";
+
+            const metadata =
+                document.createElement("div");
+
+            metadata.className =
+                "task-meta";
+
+            const chunk =
+                document.createElement("span");
+
+            chunk.textContent =
+                "Фрагмент "
+                + (
+                    (
+                        Number(
+                            source.chunk_index
+                        )
+                        || 0
+                    )
+                    + 1
+                )
+                + " / "
+                + (
+                    Number(
+                        source.chunk_count
+                    )
+                    || 1
+                );
+
+            const type =
+                document.createElement("span");
+
+            type.textContent =
+                "Тип: "
+                + (
+                    source.source_type
+                    || "—"
+                );
+
+            metadata.append(
+                chunk,
+                type
+            );
+
+            body.append(
+                sourceText,
+                metadata
+            );
+
+            header.addEventListener(
+                "click",
+                () => {
+                    const opening =
+                        !body.classList.contains(
+                            "open"
+                        );
+
+                    body.classList.toggle(
+                        "open",
+                        opening
+                    );
+
+                    header.setAttribute(
+                        "aria-expanded",
+                        opening
+                            ? "true"
+                            : "false"
+                    );
+
+                    arrow.textContent =
+                        opening
+                            ? "Сховати джерело ▴"
+                            : "Показати джерело ▾";
+                }
+            );
+
+            container.append(
+                header,
+                body
+            );
+
+            return container;
+        }
+
+        ragForm.addEventListener(
+            "submit",
+            async (event) => {
+                event.preventDefault();
+
+                const query =
+                    ragQuery.value.trim();
+
+                if (!query) {
+                    return;
+                }
+
+                clearRagResults();
+
+                ragInProgress = true;
+
+                ragSubmit.disabled = true;
+                ragQuery.disabled = true;
 
                 ragLoading.style.display =
-                    "none";
+                    "block";
 
-                ragSubmit.disabled = false;
-                ragQuery.disabled = false;
+                try {
+                    const response = await fetch(
+                        "/api/knowledge/chat",
+                        {
+                            method: "POST",
 
-                ragQuery.focus();
-            }
-        }
-    );
+                            headers: {
+                                "Content-Type":
+                                    "application/json",
+                            },
 
-    let liveInFlight = false;
-    let liveSession = null;
-    let livePollTimer = null;
-    let livePauseTickTimer = null;
+                            body: JSON.stringify({
+                                query,
+                                limit: 5,
+                                temperature: 0.1,
+                            }),
+                        }
+                    );
 
-    const liveTitle = document.getElementById("live-title");
-    const liveLanguage = document.getElementById("live-language");
-    const liveStart = document.getElementById("live-start");
-    const livePause = document.getElementById("live-pause");
-    const liveResume = document.getElementById("live-resume");
-    const liveStop = document.getElementById("live-stop");
-    const liveCancel = document.getElementById("live-cancel");
-    const liveMessage = document.getElementById("live-message");
-    const liveAgentPill = document.getElementById("live-agent-pill");
-    const liveEmpty = document.getElementById("live-empty");
-    const liveActive = document.getElementById("live-active");
-    const liveSessionTitle = document.getElementById("live-session-title");
-    const liveStateLine = document.getElementById("live-state-line");
-    const liveWave = document.getElementById("live-wave");
-    const liveRecordedLine = document.getElementById("live-recorded-line");
-    const livePauseLine = document.getElementById("live-pause-line");
-    const liveRecentList = document.getElementById("live-recent-list");
+                    let payload = {};
 
-    function formatLiveDuration(seconds) {
-        const total = Math.max(0, Math.floor(Number(seconds) || 0));
-        const hours = Math.floor(total / 3600);
-        const minutes = Math.floor((total % 3600) / 60);
-        const secs = total % 60;
-        return [
-            String(hours).padStart(2, "0"),
-            String(minutes).padStart(2, "0"),
-            String(secs).padStart(2, "0"),
-        ].join(":");
-    }
+                    try {
+                        payload =
+                            await response.json();
+                    } catch {
+                        payload = {};
+                    }
 
-    function formatPauseClock(seconds) {
-        const total = Math.max(0, Math.floor(Number(seconds) || 0));
-        if (total >= 3600) {
-            return formatLiveDuration(total);
-        }
-        const minutes = Math.floor(total / 60);
-        const secs = total % 60;
-        return String(minutes).padStart(2, "0")
-            + ":"
-            + String(secs).padStart(2, "0");
-    }
+                    if (!response.ok) {
+                        throw new Error(
+                            payload.detail
+                            || `HTTP ${response.status}`
+                        );
+                    }
 
-    function formatLiveDate(value) {
-        if (!value) {
-            return "";
-        }
-        const date = new Date(value);
-        if (Number.isNaN(date.getTime())) {
-            return String(value).slice(0, 19);
-        }
-        return date.toLocaleString("uk-UA");
-    }
+                    ragAnswerText.textContent =
+                        payload.answer
+                        || "Відповідь порожня.";
 
-    function setLiveMessage(text, isError) {
-        liveMessage.textContent = text || "";
-        liveMessage.className = isError ? "danger" : "muted";
-        liveMessage.style.margin = "12px 0 0";
-    }
+                    ragModel.textContent =
+                        "Модель: "
+                        + (
+                            payload.model
+                            || "qwen-general"
+                        );
 
-    function isLiveInProgress(status) {
-        return [
-            "created",
-            "recording",
-            "paused",
-            "stopping",
-            "processing",
-            "cancelling",
-        ].includes(status);
-    }
+                    const sources =
+                        Array.isArray(
+                            payload.sources
+                        )
+                            ? payload.sources
+                            : [];
 
-    function isLiveTerminal(status) {
-        return ["completed", "cancelled", "failed"].includes(status);
-    }
+                    ragSourceCount.textContent =
+                        `Джерел: ${sources.length}`;
 
-    function stopLivePauseTicker() {
-        if (livePauseTickTimer) {
-            window.clearInterval(livePauseTickTimer);
-            livePauseTickTimer = null;
-        }
-    }
+                    for (const source of sources) {
+                        const sourceElement =
+                            createSourceElement(
+                                source
+                            );
 
-    function startLivePauseTicker(pauseStartedAt) {
-        stopLivePauseTicker();
-        if (!pauseStartedAt) {
-            return;
-        }
-        const tick = () => {
-            const startedMs = Date.parse(pauseStartedAt);
-            if (Number.isNaN(startedMs)) {
-                return;
-            }
-            livePauseLine.textContent = "Пауза: "
-                + formatPauseClock((Date.now() - startedMs) / 1000);
-        };
-        tick();
-        livePauseTickTimer = window.setInterval(tick, 1000);
-    }
+                        ragSources.appendChild(
+                            sourceElement
+                        );
+                    }
 
-    function updateLiveControls(session) {
-        const status = session ? session.status : null;
-        const recording = status === "recording";
-        const paused = status === "paused";
-        const busy = ["stopping", "processing", "cancelling"].includes(status);
-        const canStart = !session || !isLiveInProgress(status);
+                    ragAnswer.style.display =
+                        "block";
 
-        liveStart.disabled = !canStart || liveInFlight;
-        livePause.disabled = !recording || liveInFlight;
-        liveResume.disabled = !paused || liveInFlight;
-        liveStop.disabled = !(recording || paused) || liveInFlight;
-        liveCancel.disabled = !session
-            || !isLiveInProgress(status)
-            || liveInFlight;
-        liveTitle.disabled = !canStart;
-        liveLanguage.disabled = !canStart;
+                } catch (error) {
+                    ragError.textContent =
+                        "Не вдалося отримати відповідь: "
+                        + error.message;
 
-        if (busy) {
-            livePause.disabled = true;
-            liveResume.disabled = true;
-            liveStop.disabled = true;
-        }
-    }
+                    ragError.style.display =
+                        "block";
 
-    function setWaveState(status) {
-        liveWave.classList.remove("is-recording", "is-paused");
-        if (status === "recording") {
-            liveWave.classList.add("is-recording");
-        } else if (status === "paused") {
-            liveWave.classList.add("is-paused");
-        }
-        // Extension point: replace animation with agent audio-level bars later.
-    }
+                } finally {
+                    ragInProgress = false;
 
+                    ragLoading.style.display =
+                        "none";
 
-    function renderLiveSession(session) {
-        // Active panel only for recording/paused. Stop/processing goes to Recent.
-        if (!session || !["recording", "paused"].includes(session.status)) {
-            liveSession = (session && ["recording", "paused", "stopping", "processing", "cancelling"].includes(session.status))
-                ? session
-                : null;
-            // Keep internal handle for stop/cancel while stopping/processing from active endpoint,
-            // but do not show the busy processing state in the hero panel.
-            if (!session || !["recording", "paused"].includes(session && session.status)) {
-                liveEmpty.style.display = "block";
-                liveActive.style.display = "none";
-                stopLivePauseTicker();
-                setWaveState(null);
-                // If still in-progress server-side (processing), controls stay locked via liveSession.
-                if (session && ["stopping", "processing", "cancelling"].includes(session.status)) {
-                    liveSession = session;
-                    updateLiveControls({ status: "processing" });
-                } else {
-                    liveSession = null;
-                    updateLiveControls(null);
+                    ragSubmit.disabled = false;
+                    ragQuery.disabled = false;
+
+                    ragQuery.focus();
                 }
+            }
+        );
+
+        let liveInFlight = false;
+        let liveSession = null;
+        let livePollTimer = null;
+        let liveUiTimerHandle = null;
+        let liveTimerSyncCapturedSeconds = null;
+        let liveTimerSyncTimestamp = null;
+        let livePauseStartMs = null;
+        let liveTimerTicking = false;
+
+        const liveTitle = document.getElementById("live-title");
+        const liveLanguage = document.getElementById("live-language");
+        const liveStart = document.getElementById("live-start");
+        const livePause = document.getElementById("live-pause");
+        const liveResume = document.getElementById("live-resume");
+        const liveStop = document.getElementById("live-stop");
+        const liveCancel = document.getElementById("live-cancel");
+        const liveMessage = document.getElementById("live-message");
+        const liveAgentPill = document.getElementById("live-agent-pill");
+        const liveEmpty = document.getElementById("live-empty");
+        const liveActive = document.getElementById("live-active");
+        const liveSessionTitle = document.getElementById("live-session-title");
+        const liveStateLine = document.getElementById("live-state-line");
+        const liveWave = document.getElementById("live-wave");
+        const liveRecordedLine = document.getElementById("live-recorded-line");
+        const livePauseLine = document.getElementById("live-pause-line");
+        const liveRecentList = document.getElementById("live-recent-list");
+
+        function formatLiveDuration(seconds) {
+            const total = Math.max(0, Math.floor(Number(seconds) || 0));
+            const hours = Math.floor(total / 3600);
+            const minutes = Math.floor((total % 3600) / 60);
+            const secs = total % 60;
+            return [
+                String(hours).padStart(2, "0"),
+                String(minutes).padStart(2, "0"),
+                String(secs).padStart(2, "0"),
+            ].join(":");
+        }
+
+        function formatPauseClock(seconds) {
+            const total = Math.max(0, Math.floor(Number(seconds) || 0));
+            if (total >= 3600) {
+                return formatLiveDuration(total);
+            }
+            const minutes = Math.floor(total / 60);
+            const secs = total % 60;
+            return String(minutes).padStart(2, "0")
+                + ":"
+                + String(secs).padStart(2, "0");
+        }
+
+        function formatLiveDate(value) {
+            if (!value) {
+                return "";
+            }
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) {
+                return String(value).slice(0, 19);
+            }
+            return date.toLocaleString("uk-UA");
+        }
+
+        function setLiveMessage(text, isError) {
+            liveMessage.textContent = text || "";
+            liveMessage.className = isError ? "danger" : "muted";
+            liveMessage.style.margin = "12px 0 0";
+        }
+
+        function isLiveInProgress(status) {
+            return [
+                "created",
+                "recording",
+                "paused",
+                "stopping",
+                "processing",
+                "cancelling",
+            ].includes(status);
+        }
+
+        function isLiveTerminal(status) {
+            return ["completed", "cancelled", "failed"].includes(status);
+        }
+
+        function stopLiveUiTimer() {
+            if (liveUiTimerHandle) {
+                window.clearInterval(liveUiTimerHandle);
+                liveUiTimerHandle = null;
+            }
+            liveTimerTicking = false;
+            liveTimerSyncCapturedSeconds = null;
+            liveTimerSyncTimestamp = null;
+            livePauseStartMs = null;
+        }
+
+        function interpolatedCapturedSecondsForDisplay() {
+            if (
+                liveTimerSyncCapturedSeconds === null
+                || liveTimerSyncTimestamp === null
+            ) {
+                return 0;
+            }
+            const extraSeconds = Math.max(
+                0,
+                Math.floor((Date.now() - liveTimerSyncTimestamp) / 1000)
+            );
+            return liveTimerSyncCapturedSeconds + extraSeconds;
+        }
+
+        function updateLiveUiTimers() {
+            if (
+                !liveSession
+                || !["recording", "paused"].includes(liveSession.status)
+            ) {
                 return;
+            }
+
+            liveRecordedLine.textContent = "Записано: "
+                + formatLiveDuration(
+                    interpolatedCapturedSecondsForDisplay()
+                );
+
+            if (liveSession.status === "paused" && livePauseStartMs !== null) {
+                livePauseLine.textContent = "Пауза: "
+                    + formatPauseClock(
+                        (Date.now() - livePauseStartMs) / 1000
+                    );
+            } else {
+                livePauseLine.style.display = "none";
             }
         }
 
-        liveSession = session;
-        liveEmpty.style.display = "none";
-        liveActive.style.display = "block";
-        liveSessionTitle.textContent = session.title || "Recording";
-        setWaveState(session.status);
-        liveRecordedLine.textContent = "Записано: "
-            + formatLiveDuration(session.captured_duration_seconds);
-
-        if (session.status === "recording") {
-            liveStateLine.textContent = "Запис";
-            livePauseLine.style.display = "none";
-            stopLivePauseTicker();
-        } else {
-            liveStateLine.textContent = "Пауза";
-            livePauseLine.style.display = "block";
-            livePauseLine.textContent = "Пауза: "
-                + formatPauseClock(session.current_pause_seconds || 0);
-            startLivePauseTicker(session.pause_started_at);
-        }
-
-        if (session.error) {
-            setLiveMessage(session.error, true);
-        }
-        updateLiveControls(session);
-    }
-
-    function renderRecentRecordings(sessions) {
-        liveRecentList.innerHTML = "";
-        if (!sessions || sessions.length === 0) {
-            const empty = document.createElement("p");
-            empty.className = "muted";
-            empty.textContent = "No recordings.";
-            liveRecentList.appendChild(empty);
-            return;
-        }
-
-        sessions.forEach((session) => {
-            const item = document.createElement("a");
-            item.className = "live-recent-item";
-            item.href = "/live/recordings/"
-                + encodeURIComponent(session.session_id);
-
-            const title = document.createElement("div");
-            title.className = "live-recent-title";
-            title.textContent = session.title || session.session_id;
-
-            const meta = document.createElement("div");
-            meta.className = "live-recent-meta";
-            const statusLabel = session.status === "processing"
-                ? "Processing"
-                : session.status === "completed"
-                    ? "Completed"
-                    : session.status;
-            meta.textContent = [
-                statusLabel,
-                formatLiveDate(session.started_at || session.created_at),
-                "записано "
-                    + formatLiveDuration(session.captured_duration_seconds),
-            ].join(" · ");
-
-            item.appendChild(title);
-            item.appendChild(meta);
-            liveRecentList.appendChild(item);
-        });
-    }
-
-    async function liveFetch(url, options) {
-        const response = await fetch(url, options || {});
-        let payload = null;
-        try {
-            payload = await response.json();
-        } catch (_error) {
-            payload = null;
-        }
-        if (!response.ok) {
-            const detail = payload && payload.detail
-                ? payload.detail
-                : ("HTTP " + response.status);
-            throw new Error(
-                typeof detail === "string"
-                    ? detail
-                    : JSON.stringify(detail)
+        function ensureLiveUiTimer() {
+            if (liveTimerTicking) {
+                return;
+            }
+            liveTimerTicking = true;
+            liveUiTimerHandle = window.setInterval(
+                updateLiveUiTimers,
+                1000
             );
+            updateLiveUiTimers();
         }
-        return payload;
-    }
 
-    async function refreshLiveAgent() {
-        try {
-            const payload = await liveFetch("/api/live/agent");
-            if (payload.available) {
-                liveAgentPill.textContent = "Capture Agent: online";
-                liveAgentPill.classList.remove("danger");
-                liveAgentPill.classList.add("ok");
+        function syncLiveTimersForSession(session, previousStatus) {
+            const serverCaptured = Math.max(
+                0,
+                Number(session.captured_duration_seconds) || 0
+            );
+
+            if (session.status === "recording") {
+                // Fresh start or resume from pause: keep local base and count from now.
+                if (
+                    previousStatus === "paused"
+                    || previousStatus === "created"
+                    || previousStatus === null
+                ) {
+                    if (liveTimerSyncCapturedSeconds === null) {
+                        liveTimerSyncCapturedSeconds = serverCaptured;
+                    }
+                    liveTimerSyncTimestamp = Date.now();
+                    livePauseStartMs = null;
+                } else if (
+                    serverCaptured > (liveTimerSyncCapturedSeconds || 0)
+                ) {
+                    // Server finished a chunk — server wins.
+                    liveTimerSyncCapturedSeconds = serverCaptured;
+                    liveTimerSyncTimestamp = Date.now();
+                } else if (liveTimerSyncCapturedSeconds === null) {
+                    liveTimerSyncCapturedSeconds = serverCaptured;
+                    liveTimerSyncTimestamp = Date.now();
+                }
+                livePauseLine.style.display = "none";
+            } else if (session.status === "paused") {
+                // Freeze captured timer at latest authoritative/interpolated value.
+                if (previousStatus === "recording") {
+                    liveTimerSyncCapturedSeconds =
+                        interpolatedCapturedSecondsForDisplay();
+                } else if (liveTimerSyncCapturedSeconds === null) {
+                    liveTimerSyncCapturedSeconds = serverCaptured;
+                }
+                liveTimerSyncTimestamp = Date.now();
+
+                if (session.pause_started_at) {
+                    const parsed = Date.parse(session.pause_started_at);
+                    livePauseStartMs = Number.isNaN(parsed)
+                        ? Date.now()
+                        : parsed;
+                } else {
+                    // Fallback: derive from current_pause_seconds.
+                    livePauseStartMs = Date.now()
+                        - ((Number(session.current_pause_seconds) || 0) * 1000);
+                }
+
+                livePauseLine.style.display = "block";
+                livePauseLine.textContent = "Пауза: "
+                    + formatPauseClock(
+                        (Date.now() - livePauseStartMs) / 1000
+                    );
+            }
+        }
+
+        function updateLiveControls(session) {
+            const status = session ? session.status : null;
+            const recording = status === "recording";
+            const paused = status === "paused";
+            const busy = ["stopping", "processing", "cancelling"].includes(status);
+            const canStart = !session || !isLiveInProgress(status);
+
+            liveStart.disabled = !canStart || liveInFlight;
+            livePause.disabled = !recording || liveInFlight;
+            liveResume.disabled = !paused || liveInFlight;
+            liveStop.disabled = !(recording || paused) || liveInFlight;
+            liveCancel.disabled = !session
+                || !isLiveInProgress(status)
+                || liveInFlight;
+            liveTitle.disabled = !canStart;
+            liveLanguage.disabled = !canStart;
+
+            if (busy) {
+                livePause.disabled = true;
+                liveResume.disabled = true;
+                liveStop.disabled = true;
+            }
+        }
+
+        function setWaveState(status) {
+            liveWave.classList.remove("is-recording", "is-paused");
+            if (status === "recording") {
+                liveWave.classList.add("is-recording");
+            } else if (status === "paused") {
+                liveWave.classList.add("is-paused");
+            }
+            // Extension point: replace animation with agent audio-level bars later.
+        }
+
+
+        function renderLiveSession(session) {
+            // Active panel only for recording/paused. Stop/processing goes to Recent.
+            if (!session || !["recording", "paused"].includes(session.status)) {
+                liveSession = (session && ["recording", "paused", "stopping", "processing", "cancelling"].includes(session.status))
+                    ? session
+                    : null;
+                // Keep internal handle for stop/cancel while stopping/processing from active endpoint,
+                // but do not show the busy processing state in the hero panel.
+                if (!session || !["recording", "paused"].includes(session && session.status)) {
+                    liveEmpty.style.display = "block";
+                    liveActive.style.display = "none";
+                    stopLiveUiTimer();
+                    setWaveState(null);
+                    // If still in-progress server-side (processing), controls stay locked via liveSession.
+                    if (session && ["stopping", "processing", "cancelling"].includes(session.status)) {
+                        liveSession = session;
+                        updateLiveControls({ status: "processing" });
+                    } else {
+                        liveSession = null;
+                        updateLiveControls(null);
+                    }
+                    return;
+                }
+            }
+
+            const previousStatus = liveSession
+                ? liveSession.status
+                : null;
+
+            liveSession = session;
+            liveEmpty.style.display = "none";
+            liveActive.style.display = "block";
+            liveSessionTitle.textContent = session.title || "Recording";
+            setWaveState(session.status);
+
+            syncLiveTimersForSession(session, previousStatus);
+
+            if (session.status === "recording") {
+                liveStateLine.textContent = "Запис…";
+                livePauseLine.style.display = "none";
             } else {
-                liveAgentPill.textContent = (
-                    "Capture Agent: offline"
-                    + (payload.error ? (" — " + payload.error) : "")
+                liveStateLine.textContent = "Пауза";
+                livePauseLine.style.display = "block";
+            }
+
+            if (session.error) {
+                setLiveMessage(session.error, true);
+            }
+            updateLiveControls(session);
+            ensureLiveUiTimer();
+            updateLiveUiTimers();
+        }
+
+        function renderRecentRecordings(sessions) {
+            liveRecentList.innerHTML = "";
+            if (!sessions || sessions.length === 0) {
+                const empty = document.createElement("p");
+                empty.className = "muted";
+                empty.textContent = "Немає записів.";
+                liveRecentList.appendChild(empty);
+                return;
+            }
+
+            sessions.forEach((session) => {
+                const item = document.createElement("a");
+                item.className = "live-recent-item";
+                item.href = "/live/recordings/"
+                    + encodeURIComponent(session.session_id);
+
+                const title = document.createElement("div");
+                title.className = "live-recent-title";
+                title.textContent = session.title || session.session_id;
+
+                const meta = document.createElement("div");
+                meta.className = "live-recent-meta";
+                const statusLabel = session.status === "processing"
+                    ? "Обробка"
+                    : session.status === "completed"
+                        ? "Завершено"
+                        : session.status === "failed"
+                            ? "Помилка"
+                            : session.status;
+                meta.textContent = [
+                    statusLabel,
+                    formatLiveDate(session.started_at || session.created_at),
+                    formatLiveDuration(session.captured_duration_seconds),
+                ].join(" · ");
+
+                const badges = document.createElement("div");
+                badges.className = "live-recent-badges";
+
+                if ((session.chunk_count || 0) > 0) {
+                    const audioBadge = document.createElement("span");
+                    audioBadge.className = "live-recent-badge";
+                    audioBadge.textContent = "аудіо";
+                    badges.appendChild(audioBadge);
+                }
+
+                if (session.has_recording_transcript || session.has_lesson_txt) {
+                    const txtBadge = document.createElement("span");
+                    txtBadge.className = "live-recent-badge ok";
+                    txtBadge.textContent = "транскрипт";
+                    badges.appendChild(txtBadge);
+                }
+
+                if (session.knowledge && session.knowledge.indexed) {
+                    const kbBadge = document.createElement("span");
+                    kbBadge.className = "live-recent-badge ok";
+                    kbBadge.textContent = "база знань ✓";
+                    badges.appendChild(kbBadge);
+                }
+
+                item.appendChild(title);
+                item.appendChild(meta);
+                if (badges.childElementCount > 0) {
+                    item.appendChild(badges);
+                }
+                liveRecentList.appendChild(item);
+            });
+        }
+
+        async function liveFetch(url, options) {
+            const response = await fetch(url, options || {});
+            let payload = null;
+            try {
+                payload = await response.json();
+            } catch (_error) {
+                payload = null;
+            }
+            if (!response.ok) {
+                const detail = payload && payload.detail
+                    ? payload.detail
+                    : ("HTTP " + response.status);
+                throw new Error(
+                    typeof detail === "string"
+                        ? detail
+                        : JSON.stringify(detail)
                 );
+            }
+            return payload;
+        }
+
+        async function refreshLiveAgent() {
+            try {
+                const payload = await liveFetch("/api/live/agent");
+                if (payload.available) {
+                    liveAgentPill.textContent = "Capture Agent: online";
+                    liveAgentPill.classList.remove("danger");
+                    liveAgentPill.classList.add("ok");
+                } else {
+                    liveAgentPill.textContent = (
+                        "Capture Agent: offline"
+                        + (payload.error ? (" — " + payload.error) : "")
+                    );
+                    liveAgentPill.classList.remove("ok");
+                    liveAgentPill.classList.add("danger");
+                }
+            } catch (error) {
+                liveAgentPill.textContent =
+                    "Capture Agent: error — " + error.message;
                 liveAgentPill.classList.remove("ok");
                 liveAgentPill.classList.add("danger");
             }
-        } catch (error) {
-            liveAgentPill.textContent =
-                "Capture Agent: error — " + error.message;
-            liveAgentPill.classList.remove("ok");
-            liveAgentPill.classList.add("danger");
         }
-    }
 
-    async function pollLiveSessionById(sessionId) {
-        return liveFetch(
-            "/api/live/sessions/"
-            + encodeURIComponent(sessionId)
-            + "/poll",
-            { method: "POST" }
-        );
-    }
-
-    async function refreshRecentRecordings() {
-        try {
-            const payload = await liveFetch("/api/live/sessions?limit=10");
-            renderRecentRecordings(payload.sessions || []);
-        } catch (_error) {
-            // keep previous list
+        async function pollLiveSessionById(sessionId) {
+            return liveFetch(
+                "/api/live/sessions/"
+                + encodeURIComponent(sessionId)
+                + "/poll",
+                { method: "POST" }
+            );
         }
-    }
 
-    async function refreshLiveSession() {
-        const payload = await liveFetch("/api/live/sessions/active");
-        const active = payload.session || null;
-
-        if (active && isLiveInProgress(active.status)) {
-            let session = active;
+        async function refreshRecentRecordings() {
             try {
-                session = await pollLiveSessionById(active.session_id);
+                const payload = await liveFetch("/api/live/sessions?limit=10");
+                renderRecentRecordings(payload.sessions || []);
             } catch (_error) {
-                session = active;
+                // keep previous list
             }
-            renderLiveSession(session);
-        } else if (liveSession && isLiveInProgress(liveSession.status)) {
-            try {
-                const session = await pollLiveSessionById(
-                    liveSession.session_id
-                );
+        }
+
+        async function refreshLiveSession() {
+            const payload = await liveFetch("/api/live/sessions/active");
+            const active = payload.session || null;
+
+            if (active && isLiveInProgress(active.status)) {
+                let session = active;
+                try {
+                    session = await pollLiveSessionById(active.session_id);
+                } catch (_error) {
+                    session = active;
+                }
                 renderLiveSession(session);
-            } catch (_error) {
-                renderLiveSession(null);
-            }
-        } else {
-            renderLiveSession(null);
-        }
-
-        await refreshRecentRecordings();
-    }
-
-    async function liveAction(url, body, options) {
-        if (liveInFlight) {
-            return;
-        }
-        liveInFlight = true;
-        updateLiveControls(liveSession);
-        setLiveMessage("");
-        const clearOnStop = options && options.clearOnStop;
-
-        try {
-            const request = { method: "POST", headers: {} };
-            if (body) {
-                request.headers["Content-Type"] = "application/json";
-                request.body = JSON.stringify(body);
-            }
-            const payload = await liveFetch(url, request);
-            if (clearOnStop) {
-                renderLiveSession(null);
-                setLiveMessage(
-                    payload.status === "processing"
-                        ? "Recording stopped. Transcription continues in Recent Recordings."
-                        : "Recording saved in Recent Recordings."
-                );
-            } else if (payload.status === "cancelled") {
-                renderLiveSession(null);
-                setLiveMessage("Recording cancelled.");
+            } else if (liveSession && isLiveInProgress(liveSession.status)) {
+                try {
+                    const session = await pollLiveSessionById(
+                        liveSession.session_id
+                    );
+                    renderLiveSession(session);
+                } catch (_error) {
+                    renderLiveSession(null);
+                }
             } else {
-                renderLiveSession(payload);
+                renderLiveSession(null);
             }
+
             await refreshRecentRecordings();
-        } catch (error) {
-            setLiveMessage(error.message, true);
-        } finally {
-            liveInFlight = false;
-            updateLiveControls(liveSession);
-            await refreshLiveAgent();
         }
-    }
 
-    liveStart.addEventListener("click", async () => {
-        const title = (liveTitle.value || "").trim();
-        if (!title) {
-            setLiveMessage("Enter a recording title.", true);
-            liveTitle.focus();
-            return;
-        }
-        await liveAction("/api/live/sessions/start", {
-            title: title,
-            language: liveLanguage.value || "auto",
-        });
-    });
-
-    livePause.addEventListener("click", async () => {
-        if (!liveSession) return;
-        await liveAction(
-            "/api/live/sessions/"
-            + encodeURIComponent(liveSession.session_id)
-            + "/pause"
-        );
-    });
-
-    liveResume.addEventListener("click", async () => {
-        if (!liveSession) return;
-        await liveAction(
-            "/api/live/sessions/"
-            + encodeURIComponent(liveSession.session_id)
-            + "/resume"
-        );
-    });
-
-    liveStop.addEventListener("click", async () => {
-        if (!liveSession) return;
-        await liveAction(
-            "/api/live/sessions/"
-            + encodeURIComponent(liveSession.session_id)
-            + "/stop",
-            null,
-            { clearOnStop: true }
-        );
-    });
-
-    liveCancel.addEventListener("click", async () => {
-        if (!liveSession) return;
-        if (!window.confirm("Cancel the current recording?")) {
-            return;
-        }
-        await liveAction(
-            "/api/live/sessions/"
-            + encodeURIComponent(liveSession.session_id)
-            + "/cancel"
-        );
-    });
-
-    refreshLiveAgent();
-    refreshLiveSession();
-    livePollTimer = window.setInterval(() => {
-        if (document.hidden || liveInFlight) {
-            return;
-        }
-        refreshLiveSession();
-        refreshLiveAgent();
-    }, 2000);
-
-    window.setInterval(
-        () => {
-            const fileSelected =
-                fileInput
-                && fileInput.files
-                && fileInput.files.length > 0;
-
-            const searchIsActive =
-                searchInput
-                && (
-                    document.activeElement
-                    === searchInput
-                    || searchInput.value
-                        .trim()
-                        .length > 0
-                );
-
-            const ragIsActive =
-                ragQuery
-                && (
-                    document.activeElement
-                    === ragQuery
-                    || ragQuery.value
-                        .trim()
-                        .length > 0
-                );
-
-            const formIsActive =
-                document.activeElement
-                && (
-                    document.activeElement
-                        .tagName === "INPUT"
-                    || document.activeElement
-                        .tagName === "TEXTAREA"
-                    || document.activeElement
-                        .tagName === "SELECT"
-                );
-
-            const liveIsActive =
-                liveSession
-                && isLiveInProgress(liveSession.status);
-
-            const canRefresh =
-                hasActiveTasks
-                && !document.hidden
-                && !fileSelected
-                && !searchIsActive
-                && !ragIsActive
-                && !formIsActive
-                && !recordingActive
-                && !recordedBlob
-                && !uploadInProgress
-                && !ragInProgress
-                && !liveIsActive
-                && !liveInFlight;
-
-            if (canRefresh) {
-                window.location.reload();
+        async function liveAction(url, body, options) {
+            if (liveInFlight) {
+                return;
             }
-        },
-        5000
-    );
-</script>
+            liveInFlight = true;
+            updateLiveControls(liveSession);
+            setLiveMessage("");
+            const clearOnStop = options && options.clearOnStop;
+
+            try {
+                const request = { method: "POST", headers: {} };
+                if (body) {
+                    request.headers["Content-Type"] = "application/json";
+                    request.body = JSON.stringify(body);
+                }
+                const payload = await liveFetch(url, request);
+                if (clearOnStop) {
+                    renderLiveSession(null);
+                    setLiveMessage(
+                        payload.status === "processing"
+                            ? "Запис зупинено. Транскрипція триває в Recent Recordings."
+                            : "Запис збережено в Recent Recordings."
+                    );
+                } else if (payload.status === "cancelled") {
+                    renderLiveSession(null);
+                    setLiveMessage("Запис скасовано.");
+                } else {
+                    renderLiveSession(payload);
+                }
+                await refreshRecentRecordings();
+            } catch (error) {
+                setLiveMessage(error.message, true);
+            } finally {
+                liveInFlight = false;
+                updateLiveControls(liveSession);
+                await refreshLiveAgent();
+            }
+        }
+
+        liveStart.addEventListener("click", async () => {
+            const title = (liveTitle.value || "").trim();
+            if (!title) {
+                setLiveMessage("Вкажіть назву запису.", true);
+                liveTitle.focus();
+                return;
+            }
+            await liveAction("/api/live/sessions/start", {
+                title: title,
+                language: liveLanguage.value || "auto",
+            });
+        });
+
+        livePause.addEventListener("click", async () => {
+            if (!liveSession) return;
+            await liveAction(
+                "/api/live/sessions/"
+                + encodeURIComponent(liveSession.session_id)
+                + "/pause"
+            );
+        });
+
+        liveResume.addEventListener("click", async () => {
+            if (!liveSession) return;
+            await liveAction(
+                "/api/live/sessions/"
+                + encodeURIComponent(liveSession.session_id)
+                + "/resume"
+            );
+        });
+
+        liveStop.addEventListener("click", async () => {
+            if (!liveSession) return;
+            await liveAction(
+                "/api/live/sessions/"
+                + encodeURIComponent(liveSession.session_id)
+                + "/stop",
+                null,
+                { clearOnStop: true }
+            );
+        });
+
+        liveCancel.addEventListener("click", async () => {
+            if (!liveSession) return;
+            if (!window.confirm("Скасувати поточний запис?")) {
+                return;
+            }
+            await liveAction(
+                "/api/live/sessions/"
+                + encodeURIComponent(liveSession.session_id)
+                + "/cancel"
+            );
+        });
+
+        refreshLiveAgent();
+        refreshLiveSession();
+        livePollTimer = window.setInterval(() => {
+            if (document.hidden || liveInFlight) {
+                return;
+            }
+            refreshLiveSession();
+            refreshLiveAgent();
+        }, 2000);
+
+        window.setInterval(
+            () => {
+                const fileSelected =
+                    fileInput
+                    && fileInput.files
+                    && fileInput.files.length > 0;
+
+                const searchIsActive =
+                    searchInput
+                    && (
+                        document.activeElement
+                        === searchInput
+                        || searchInput.value
+                            .trim()
+                            .length > 0
+                    );
+
+                const ragIsActive =
+                    ragQuery
+                    && (
+                        document.activeElement
+                        === ragQuery
+                        || ragQuery.value
+                            .trim()
+                            .length > 0
+                    );
+
+                const formIsActive =
+                    document.activeElement
+                    && (
+                        document.activeElement
+                            .tagName === "INPUT"
+                        || document.activeElement
+                            .tagName === "TEXTAREA"
+                        || document.activeElement
+                            .tagName === "SELECT"
+                    );
+
+                const liveIsActive =
+                    liveSession
+                    && isLiveInProgress(liveSession.status);
+
+                const canRefresh =
+                    hasActiveTasks
+                    && !document.hidden
+                    && !fileSelected
+                    && !searchIsActive
+                    && !ragIsActive
+                    && !formIsActive
+                    && !recordingActive
+                    && !recordedBlob
+                    && !uploadInProgress
+                    && !ragInProgress
+                    && !liveIsActive
+                    && !liveInFlight;
+
+                if (canRefresh) {
+                    window.location.reload();
+                }
+            },
+            5000
+        );
+    </script>
 </body>
+
 </html>

@@ -41,6 +41,30 @@ MAX_UPLOAD_MB = int(
 
 MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 
+_LOCAL_DELETED_TASKS_PATH = AUDIO_ROOT / ".local_deleted_tasks.txt"
+
+
+def _load_local_deleted_tasks() -> set[str]:
+    """Return the set of task ids that have been locally deleted."""
+    try:
+        if _LOCAL_DELETED_TASKS_PATH.is_file():
+            lines = _LOCAL_DELETED_TASKS_PATH.read_text(
+                encoding="utf-8", errors="replace"
+            ).splitlines()
+            return {line.strip() for line in lines if line.strip()}
+    except OSError:
+        pass
+    return set()
+
+
+def _mark_local_deleted_task(task_id: str) -> None:
+    """Append task_id to the local-deleted tracking file."""
+    try:
+        with _LOCAL_DELETED_TASKS_PATH.open("a", encoding="utf-8") as fh:
+            fh.write(task_id + "\n")
+    except OSError:
+        pass
+
 APP_VERSION = "0.3.0"
 
 SUPPORTED_EXTENSIONS = {
@@ -557,6 +581,14 @@ async def index(
         == "completed"
     ]
 
+    # Exclude tasks that were already locally deleted.
+    locally_deleted = _load_local_deleted_tasks()
+    if locally_deleted:
+        completed_tasks = [
+            t for t in completed_tasks
+            if str(t.get("id") or "") not in locally_deleted
+        ]
+
     failed_tasks = [
         task
         for task in tasks
@@ -616,7 +648,6 @@ async def index(
             completed_tasks=completed_tasks,
             failed_tasks=failed_tasks,
             folders=folders,
-            knowledge_documents=knowledge_service.list_documents(),
             max_upload_mb=MAX_UPLOAD_MB,
             success=request.query_params.get(
                 "success"
@@ -863,6 +894,79 @@ async def delete_file(
         url=(
             "/?success="
             + quote(note)
+        ),
+        status_code=303,
+    )
+
+
+@app.post(
+    "/tasks/{task_id}/local-delete"
+)
+async def local_delete_completed_task(
+    task_id: str,
+    request: Request,
+) -> RedirectResponse:
+    """Delete local artifacts of a completed transcription only.
+
+    Removes source audio (archive), generated TXT, and JSON files.
+    Knowledge/Qdrant is never touched.
+    """
+    tasks_payload = await audio_tasks()
+    tasks = tasks_payload.get("tasks", [])
+    task = next((t for t in tasks if str(t.get("id")) == task_id), None)
+
+    if task is None:
+        return RedirectResponse(
+            url="/?error=" + quote("Транскрипцію не знайдено."),
+            status_code=303,
+        )
+
+    if task.get("status") != "completed":
+        return RedirectResponse(
+            url="/?error=" + quote("Можна видалити лише завершену транскрипцію."),
+            status_code=303,
+        )
+
+    deleted_files: list[str] = []
+
+    source_filename = task.get("source_file") or task.get("file_path")
+    if source_filename:
+        safe_name = Path(source_filename).name
+        archive_path = safe_path("archive", safe_name)
+        if archive_path.exists() and archive_path.is_file():
+            archive_path.unlink()
+            deleted_files.append(f"archive/{safe_name}")
+
+    output_files = (
+        task.get("result", {}).get("output_files", [])
+        if isinstance(task.get("result"), dict)
+        else []
+    )
+    for output in output_files:
+        output_name = Path(output).name
+        ready_path = safe_path("ready", output_name)
+        if ready_path.exists() and ready_path.is_file():
+            ready_path.unlink()
+            deleted_files.append(f"ready/{output_name}")
+
+    _mark_local_deleted_task(task_id)
+
+    state = knowledge_service.state_for_source("upload_task", task_id)
+    if state.get("indexed"):
+        knowledge_service.mark_local_deleted("upload_task", task_id)
+
+    if deleted_files:
+        message = (
+            f"Локальні файли видалено ({len(deleted_files)}). "
+            "Дані в базі знань збережено."
+        )
+    else:
+        message = "Локальні файли вже були відсутні; запис прибрано."
+
+    return RedirectResponse(
+        url=(
+            "/?success="
+            + quote(message)
         ),
         status_code=303,
     )
