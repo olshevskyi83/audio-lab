@@ -215,6 +215,24 @@ def test_live_actions_are_not_blocked_by_secondary_refreshes(api_client):
     assert "void refreshRecentRecordings()" in html
 
 
+def test_knowledge_controls_exist_only_for_completed_core_tasks(api_client):
+    client, _, _, _ = api_client
+    dashboard = client.get("/").text
+    template = (
+        Path(__file__).parents[1] / "app" / "templates" / "index.html"
+    ).read_text(encoding="utf-8")
+
+    assert "Тимчасова черга: перегляд і видалення локальної копії." in dashboard
+    assert "kbBadge" not in dashboard
+    assert 'viewLink.textContent = "Перегляд"' in template
+    assert 'deleteButton.textContent = "Видалити локальну копію"' in template
+    assert '{ method: "DELETE" }' in template
+    assert 'action="/tasks/{{ task.id }}/index"' in template
+    assert 'action="/tasks/{{ task.id }}/reindex"' in template
+    assert 'action="/tasks/{{ task.id }}/unindex"' in template
+    assert "Видалити транскрипцію з Homelab Knowledge?" in template
+
+
 @pytest.mark.asyncio
 async def test_pause_exposes_current_pause_timer_fields(lesson_env):
     service, _, _, _, _ = lesson_env

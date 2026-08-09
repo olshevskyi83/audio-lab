@@ -128,9 +128,6 @@
         <span>Статус: <strong>{{ session.status }}</strong></span>
         <span>{{ session.started_at or session.created_at }}</span>
         <span>Записано: {{ recorded_label }}</span>
-        {% if session.knowledge.indexed %}
-        <span class="knowledge-ok">База знань: Додано ✓</span>
-        {% endif %}
     </div>
 
     {% if chunks %}
@@ -158,27 +155,13 @@
             </a>
             {% endif %}
 
-            {% if not session.knowledge.indexed %}
-            <button
-                id="knowledge-add-btn"
-                class="button"
-                type="button"
-                {% if not session.knowledge.can_add %}disabled{% endif %}
-            >
-                Додати в базу знань
-            </button>
-            {% else %}
-            <span class="knowledge-ok">База знань: Додано ✓</span>
-            {% endif %}
-
             {% if session.status in ['completed', 'cancelled', 'failed'] %}
             <button
                 id="delete-btn"
                 class="button danger"
                 type="button"
-                data-indexed="{{ '1' if session.knowledge.indexed else '0' }}"
             >
-                Видалити запис
+                Видалити локальну копію
             </button>
             {% endif %}
         </div>
@@ -200,16 +183,10 @@
 <script>
     const sessionId = "{{ session.session_id }}";
     const deleteBtn = document.getElementById("delete-btn");
-    const addBtn = document.getElementById("knowledge-add-btn");
     const message = document.getElementById("action-message");
 
-    const INDEXED_DELETE_CONFIRM =
-        "Цей запис уже додано в базу знань.\n"
-        + "Локальне аудіо та транскрипція будуть видалені,\n"
-        + "але інформація залишиться в базі знань.\n"
-        + "Продовжити?";
     const NORMAL_DELETE_CONFIRM =
-        "Видалити цей запис разом з аудіо та транскрипцією?";
+        "Видалити локальне аудіо та локальну копію транскрипції?";
 
     async function api(url, options) {
         const response = await fetch(url, options || {});
@@ -220,29 +197,9 @@
         return payload;
     }
 
-    if (addBtn) {
-        addBtn.addEventListener("click", async () => {
-            addBtn.disabled = true;
-            try {
-                await api(
-                    "/api/live/sessions/" + encodeURIComponent(sessionId) + "/knowledge",
-                    { method: "POST" }
-                );
-                window.location.reload();
-            } catch (error) {
-                message.textContent = String(error.message || error);
-                addBtn.disabled = false;
-            }
-        });
-    }
-
     if (deleteBtn) {
         deleteBtn.addEventListener("click", async () => {
-            const indexed = deleteBtn.dataset.indexed === "1";
-            const confirmText = indexed
-                ? INDEXED_DELETE_CONFIRM
-                : NORMAL_DELETE_CONFIRM;
-            if (!window.confirm(confirmText)) {
+            if (!window.confirm(NORMAL_DELETE_CONFIRM)) {
                 return;
             }
             deleteBtn.disabled = true;

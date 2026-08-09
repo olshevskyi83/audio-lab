@@ -91,10 +91,11 @@ def test_audio_preserved_and_servable_after_transcription(api_client):
     detail = client.get(f"/live/sessions/{sid}")
     assert detail.status_code == 200
     assert "00:00:00–00:10:00" in detail.text or "00:00–00:10:00" in detail.text
-    assert "Додати в базу знань" in detail.text or "База знань" in detail.text
+    assert "Додати в базу знань" not in detail.text
+    assert "Видалити локальну копію" in detail.text
     assert "Переглянути транскрипцію" in detail.text
     assert "Завантажити TXT" in detail.text
-    assert "Видалити запис" in detail.text
+    assert "Видалити локальну копію" in detail.text
     assert "Видалити урок" not in detail.text
     assert "<audio" in detail.text
 

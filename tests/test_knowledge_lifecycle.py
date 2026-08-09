@@ -190,8 +190,8 @@ def test_ui_uses_recording_terminology_not_lesson(api_client):
 
     sid = _complete_recording(client, core, "Detail terms")
     detail = client.get(f"/live/recordings/{sid}").text
-    assert "Видалити запис" in detail
-    assert "Додати в базу знань" in detail
+    assert "Видалити локальну копію" in detail
+    assert "Додати в базу знань" not in detail
     assert "Переглянути транскрипцію" in detail
     assert "Завантажити TXT" in detail
     assert "Видалити урок" not in detail
@@ -201,7 +201,8 @@ def test_ui_uses_recording_terminology_not_lesson(api_client):
 
     client.post(f"/api/live/sessions/{sid}/knowledge")
     indexed_detail = client.get(f"/live/recordings/{sid}").text
-    assert "База знань: Додано ✓" in indexed_detail
+    assert "База знань: Додано ✓" not in indexed_detail
+    assert "knowledge-add-btn" not in indexed_detail
     assert "Reindex" not in indexed_detail
     assert "Remove from Knowledge" not in indexed_detail
 

@@ -324,13 +324,11 @@
         }
 
         .live-recent-item {
-            display: block;
             padding: 12px 14px;
             border-radius: 8px;
             background: var(--panel-soft);
             border: 1px solid var(--border);
             color: inherit;
-            text-decoration: none;
         }
 
         .live-recent-item:hover {
@@ -365,6 +363,20 @@
 
         .live-recent-badge.ok {
             color: var(--green);
+        }
+
+        .live-recent-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .live-recent-actions button,
+        .live-recent-actions .button {
+            min-height: 32px;
+            padding: 6px 10px;
+            font-size: 12px;
         }
 
         @media (max-width: 860px) {
@@ -1211,7 +1223,7 @@
             <div class="live-recent">
                 <h3>Recent Recordings</h3>
                 <p class="muted" style="margin-bottom: 0;">
-                    Тимчасова черга: перегляд, база знань, видалення локальної копії.
+                    Тимчасова черга: перегляд і видалення локальної копії.
                 </p>
                 <div id="live-recent-list" class="live-recent-list"></div>
             </div>
@@ -1514,7 +1526,7 @@
 
                         <form method="post" action="/tasks/{{ task.id }}/local-delete" class="local-delete-form"
                             onsubmit="return confirm(this.dataset.confirmMessage)"
-                            data-confirm-message="{% set k_state = task.knowledge or {} %}{% if k_state.indexed %}Матеріал є в базі знань. Локальне аудіо та транскрипція будуть видалені, але інформація в базі знань залишиться. Продовжити?{% else %}Видалити аудіо та локальну транскрипцію?{% endif %}">
+                            data-confirm-message="Видалити локальне аудіо та локальну транскрипцію? Стан Homelab Knowledge не зміниться.">
                             <button class="danger-button" type="submit">
                                 Видалити локально
                             </button>
@@ -2801,10 +2813,8 @@
             }
 
             sessions.forEach((session) => {
-                const item = document.createElement("a");
+                const item = document.createElement("article");
                 item.className = "live-recent-item";
-                item.href = "/live/recordings/"
-                    + encodeURIComponent(session.session_id);
 
                 const title = document.createElement("div");
                 title.className = "live-recent-title";
@@ -2842,18 +2852,53 @@
                     badges.appendChild(txtBadge);
                 }
 
-                if (session.knowledge && session.knowledge.indexed) {
-                    const kbBadge = document.createElement("span");
-                    kbBadge.className = "live-recent-badge ok";
-                    kbBadge.textContent = "база знань ✓";
-                    badges.appendChild(kbBadge);
-                }
-
                 item.appendChild(title);
                 item.appendChild(meta);
                 if (badges.childElementCount > 0) {
                     item.appendChild(badges);
                 }
+
+                const actions = document.createElement("div");
+                actions.className = "live-recent-actions";
+
+                const viewLink = document.createElement("a");
+                viewLink.className = "button secondary";
+                viewLink.href = "/live/recordings/"
+                    + encodeURIComponent(session.session_id);
+                viewLink.textContent = "Перегляд";
+                actions.appendChild(viewLink);
+
+                if (["completed", "failed", "cancelled"].includes(session.status)) {
+                    const deleteButton = document.createElement("button");
+                    deleteButton.type = "button";
+                    deleteButton.className = "danger-button";
+                    deleteButton.textContent = "Видалити локальну копію";
+                    deleteButton.addEventListener("click", async () => {
+                        const confirmed = window.confirm(
+                            "Видалити локальне аудіо та локальну транскрипцію?"
+                        );
+                        if (!confirmed) {
+                            return;
+                        }
+                        deleteButton.disabled = true;
+                        try {
+                            await liveFetch(
+                                "/api/live/sessions/"
+                                + encodeURIComponent(session.session_id),
+                                { method: "DELETE" },
+                                30000
+                            );
+                            setLiveMessage("Локальну копію видалено.");
+                            await refreshRecentRecordings();
+                        } catch (error) {
+                            setLiveMessage(error.message, true);
+                            deleteButton.disabled = false;
+                        }
+                    });
+                    actions.appendChild(deleteButton);
+                }
+
+                item.appendChild(actions);
                 liveRecentList.appendChild(item);
             });
         }
