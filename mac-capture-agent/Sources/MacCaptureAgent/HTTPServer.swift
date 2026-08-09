@@ -184,7 +184,7 @@ final class AgentHTTPServer: @unchecked Sendable {
                 where stopPath.hasPrefix("/sessions/") && stopPath.hasSuffix("/stop"):
                 let sessionId = extractSessionId(from: stopPath)
                 try controller.stop(sessionId: sessionId)
-                respond(connection, status: 200, json: ["state": "idle"])
+                respond(connection, status: 200, json: controller.statusPayload())
 
             case ("POST", let cancelPath)
                 where cancelPath.hasPrefix("/sessions/") && cancelPath.hasSuffix("/cancel"):

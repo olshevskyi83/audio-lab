@@ -352,6 +352,7 @@ class LessonService:
 
             session.status = SessionStatus.STOPPING
             self.store.save(session)
+            chunk_count_before_stop = len(session.chunks)
 
             try:
                 await self.capture.stop(session_id)
@@ -370,6 +371,8 @@ class LessonService:
             session.status = SessionStatus.PROCESSING
             self.store.save(session)
 
+        if chunk_count_before_stop == 0:
+            await self._wait_for_first_chunk_after_stop(session_id)
         await self.poll_session_transcriptions(session_id)
         return await self._finalize_if_ready(session_id)
 
@@ -655,12 +658,31 @@ class LessonService:
                 self.store.save(session)
                 return self._public(session)
 
+            if not session.chunks:
+                session.status = SessionStatus.FAILED
+                session.ended_at = session.ended_at or utc_now_iso()
+                session.error = (
+                    "No audio chunks were received from Mac Capture Agent; "
+                    "transcription was not started"
+                )
+                self.store.save(session)
+                return self._public(session)
+
             self._rebuild_lesson_txt(session)
             session.status = SessionStatus.COMPLETED
             session.ended_at = session.ended_at or utc_now_iso()
             session.error = None
             self.store.save(session)
             return self._public(session)
+
+    async def _wait_for_first_chunk_after_stop(self, session_id: str) -> None:
+        """Allow older capture agents to finish their asynchronous final upload."""
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + self.settings.stop_upload_grace_seconds
+        while loop.time() < deadline:
+            if self._load(session_id).chunks:
+                return
+            await asyncio.sleep(min(0.1, self.settings.stop_upload_grace_seconds))
 
     def _rebuild_lesson_txt(self, session: LessonSession) -> None:
         transcripts: dict[int, str] = {}

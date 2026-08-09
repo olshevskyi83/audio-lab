@@ -22,6 +22,7 @@ def api_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("MAC_CAPTURE_AGENT_TOKEN", "secret-token")
     monkeypatch.setenv("LIVE_UPLOAD_TOKEN", "secret-token")
     monkeypatch.setenv("AUDIO_LAB_PUBLIC_URL", "http://lab.test")
+    monkeypatch.setenv("LIVE_STOP_UPLOAD_GRACE_SECONDS", "0.1")
 
     # Reload settings-dependent globals used by routes.
     from app.knowledge import service as knowledge_module

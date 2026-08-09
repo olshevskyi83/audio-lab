@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import struct
 from pathlib import Path
 
@@ -115,6 +116,7 @@ def lesson_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("MAC_CAPTURE_AGENT_TOKEN", "secret-token")
     monkeypatch.setenv("LIVE_UPLOAD_TOKEN", "secret-token")
     monkeypatch.setenv("AUDIO_LAB_PUBLIC_URL", "http://lab.test")
+    monkeypatch.setenv("LIVE_STOP_UPLOAD_GRACE_SECONDS", "0.1")
 
     settings = LiveLessonSettings()
     from app.knowledge.registry import KnowledgeRegistry
@@ -188,6 +190,51 @@ async def test_stop_lifecycle_waits_for_transcription(lesson_env):
     text = lesson_path.read_text(encoding="utf-8")
     assert "hello lesson" in text
     assert "[00:00:00 – 00:00:30]" in text
+
+
+@pytest.mark.asyncio
+async def test_stop_waits_for_delayed_final_chunk_upload(lesson_env):
+    service, store, capture, core, settings = lesson_env
+    settings.stop_upload_grace_seconds = 1.0
+    session = await service.start_lesson(title="Delayed final chunk", language="auto")
+    sid = session["session_id"]
+
+    async def delayed_stop(session_id: str):
+        capture.calls.append(("stop", session_id))
+
+        async def upload_final_chunk():
+            await asyncio.sleep(0.05)
+            await service.accept_chunk(
+                session_id=session_id,
+                chunk_index=1,
+                start_offset_seconds=0,
+                end_offset_seconds=30,
+                duration_seconds=30,
+                audio=make_wav(),
+            )
+
+        asyncio.create_task(upload_final_chunk())
+        return {"state": "idle"}
+
+    capture.stop = delayed_stop
+    stopped = await service.stop_lesson(sid)
+
+    assert stopped["status"] == "processing"
+    assert len(core.created) == 1
+    assert (store.audio_dir(sid) / "chunk_0001.wav").is_file()
+
+
+@pytest.mark.asyncio
+async def test_stop_without_audio_is_failed_not_empty_completed_report(lesson_env):
+    service, store, _, _, settings = lesson_env
+    settings.stop_upload_grace_seconds = 0.01
+    session = await service.start_lesson(title="No audio", language="auto")
+
+    stopped = await service.stop_lesson(session["session_id"])
+
+    assert stopped["status"] == "failed"
+    assert "No audio chunks" in stopped["error"]
+    assert not store.lesson_txt_path(session["session_id"]).exists()
 
 
 @pytest.mark.asyncio

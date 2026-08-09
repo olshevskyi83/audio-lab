@@ -75,6 +75,10 @@ class LiveLessonSettings:
             "LIVE_POLL_INTERVAL_SECONDS",
             2.0,
         )
+        self.stop_upload_grace_seconds = _env_float(
+            "LIVE_STOP_UPLOAD_GRACE_SECONDS",
+            15.0,
+        )
 
 
 settings = LiveLessonSettings()

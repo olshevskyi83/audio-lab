@@ -273,21 +273,39 @@ final class SessionController: @unchecked Sendable {
 
         let token = authToken
         let timeout = config.uploadTimeoutSeconds
-        Task {
-            do {
-                try await ChunkUploader.upload(
-                    wav: wav,
-                    manifest: manifest,
-                    uploadURL: uploadURL,
-                    token: token,
-                    timeout: timeout
-                )
-            } catch {
-                // Keep capture alive; surface error via status.
-                self.setLastError(
-                    "Chunk upload failed: \(error.localizedDescription)"
-                )
+        let upload: @Sendable () async throws -> Void = {
+            try await ChunkUploader.upload(
+                wav: wav,
+                manifest: manifest,
+                uploadURL: uploadURL,
+                token: token,
+                timeout: timeout
+            )
+        }
+
+        if reason == .auto {
+            Task {
+                do {
+                    try await upload()
+                } catch {
+                    // Keep capture alive; surface error via status.
+                    self.setLastError(
+                        "Chunk upload failed: \(error.localizedDescription)"
+                    )
+                }
             }
+            return
+        }
+
+        // Pause/Stop must not acknowledge completion before the final WAV has
+        // reached Audio Lab. Otherwise Audio Lab can finalize an empty session
+        // while this upload is still running in the background.
+        do {
+            try AsyncBridge.runThrowing(timeoutSeconds: timeout + 5) {
+                try await upload()
+            }
+        } catch {
+            lastError = "Final chunk upload failed: \(error.localizedDescription)"
         }
     }
 
