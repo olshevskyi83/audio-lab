@@ -2597,10 +2597,13 @@
             ) {
                 return 0;
             }
-            const extraSeconds = Math.max(
+            const extraSeconds = liveSession
+                && liveSession.status === "recording"
+                ? Math.max(
                 0,
                 Math.floor((Date.now() - liveTimerSyncTimestamp) / 1000)
-            );
+                )
+                : 0;
             return liveTimerSyncCapturedSeconds + extraSeconds;
         }
 
@@ -2671,8 +2674,10 @@
             } else if (session.status === "paused") {
                 // Freeze captured timer at latest authoritative/interpolated value.
                 if (previousStatus === "recording") {
-                    liveTimerSyncCapturedSeconds =
-                        interpolatedCapturedSecondsForDisplay();
+                    liveTimerSyncCapturedSeconds = Math.max(
+                        serverCaptured,
+                        liveTimerSyncCapturedSeconds || 0
+                    );
                 } else if (liveTimerSyncCapturedSeconds === null) {
                     liveTimerSyncCapturedSeconds = serverCaptured;
                 }
@@ -2949,7 +2954,11 @@
             }
             liveInFlight = true;
             updateLiveControls(liveSession);
-            setLiveMessage("");
+            setLiveMessage(
+                options && options.pendingMessage
+                    ? options.pendingMessage
+                    : ""
+            );
             const clearOnStop = options && options.clearOnStop;
 
             try {
@@ -3000,7 +3009,9 @@
             await liveAction(
                 "/api/live/sessions/"
                 + encodeURIComponent(liveSession.session_id)
-                + "/pause"
+                + "/pause",
+                null,
+                { pendingMessage: "Пауза: зберігаємо поточний аудіофрагмент…" }
             );
         });
 
@@ -3009,7 +3020,9 @@
             await liveAction(
                 "/api/live/sessions/"
                 + encodeURIComponent(liveSession.session_id)
-                + "/resume"
+                + "/resume",
+                null,
+                { pendingMessage: "Продовжуємо запис…" }
             );
         });
 
@@ -3020,7 +3033,10 @@
                 + encodeURIComponent(liveSession.session_id)
                 + "/stop",
                 null,
-                { clearOnStop: true }
+                {
+                    clearOnStop: true,
+                    pendingMessage: "Зупинка: зберігаємо фінальний аудіофрагмент…",
+                }
             );
         });
 

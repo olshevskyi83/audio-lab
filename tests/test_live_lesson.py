@@ -201,25 +201,47 @@ async def test_stop_waits_for_delayed_final_chunk_upload(lesson_env):
 
     async def delayed_stop(session_id: str):
         capture.calls.append(("stop", session_id))
-
-        async def upload_final_chunk():
-            await asyncio.sleep(0.05)
-            await service.accept_chunk(
-                session_id=session_id,
-                chunk_index=1,
-                start_offset_seconds=0,
-                end_offset_seconds=30,
-                duration_seconds=30,
-                audio=make_wav(),
-            )
-
-        asyncio.create_task(upload_final_chunk())
+        await service.accept_chunk(
+            session_id=session_id,
+            chunk_index=1,
+            start_offset_seconds=0,
+            end_offset_seconds=30,
+            duration_seconds=30,
+            audio=make_wav(),
+        )
         return {"state": "idle"}
 
     capture.stop = delayed_stop
     stopped = await service.stop_lesson(sid)
 
     assert stopped["status"] == "processing"
+    assert len(core.created) == 1
+    assert (store.audio_dir(sid) / "chunk_0001.wav").is_file()
+
+
+@pytest.mark.asyncio
+async def test_pause_accepts_final_chunk_without_lock_deadlock(lesson_env):
+    service, store, capture, core, _ = lesson_env
+    session = await service.start_lesson(title="Pause upload", language="auto")
+    sid = session["session_id"]
+
+    async def pause_and_upload(session_id: str):
+        capture.calls.append(("pause", session_id))
+        await service.accept_chunk(
+            session_id=session_id,
+            chunk_index=1,
+            start_offset_seconds=0,
+            end_offset_seconds=25,
+            duration_seconds=25,
+            audio=make_wav(),
+        )
+        return {"state": "paused"}
+
+    capture.pause = pause_and_upload
+    paused = await asyncio.wait_for(service.pause_lesson(sid), timeout=1)
+
+    assert paused["status"] == "paused"
+    assert paused["pending_chunk_count"] == 1
     assert len(core.created) == 1
     assert (store.audio_dir(sid) / "chunk_0001.wav").is_file()
 

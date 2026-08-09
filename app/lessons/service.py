@@ -302,13 +302,19 @@ class LessonService:
                     f"Cannot pause session in status {session.status.value}",
                     status_code=409,
                 )
-            try:
-                await self.capture.pause(session_id)
-            except CaptureAgentError as exc:
-                raise LessonError(str(exc), status_code=exc.status_code or 502) from exc
+            pause_started_at = utc_now_iso()
 
+        # The agent uploads its final open chunk before acknowledging Pause.
+        # Do not hold _lock: the incoming /chunks request needs it.
+        try:
+            await self.capture.pause(session_id)
+        except CaptureAgentError as exc:
+            raise LessonError(str(exc), status_code=exc.status_code or 502) from exc
+
+        async with self._lock:
+            session = self._load(session_id)
             session.status = SessionStatus.PAUSED
-            session.pause_started_at = utc_now_iso()
+            session.pause_started_at = pause_started_at
             self.store.save(session)
             return self._public(session)
 
@@ -354,12 +360,19 @@ class LessonService:
             self.store.save(session)
             chunk_count_before_stop = len(session.chunks)
 
-            try:
-                await self.capture.stop(session_id)
-            except CaptureAgentError as exc:
-                # Capture may already be stopped; continue finalization.
-                session.error = f"Capture stop warning: {exc}"
+        # Stop synchronously uploads the final chunk. Release _lock so the
+        # upload endpoint can accept and enqueue it without deadlocking.
+        stop_warning = None
+        try:
+            await self.capture.stop(session_id)
+        except CaptureAgentError as exc:
+            # Capture may already be stopped; continue finalization.
+            stop_warning = f"Capture stop warning: {exc}"
 
+        async with self._lock:
+            session = self._load(session_id)
+            if stop_warning:
+                session.error = stop_warning
             if session.pause_started_at:
                 paused_for = (
                     utc_now()
