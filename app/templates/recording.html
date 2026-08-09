@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ session.title }} — Live Recording</title>
+    <title>{{ session.title }} — Запис</title>
     <style>
         :root {
             color-scheme: dark;
@@ -50,6 +50,7 @@
             flex-wrap: wrap;
             gap: 8px;
             margin-top: 14px;
+            align-items: center;
         }
         button, .button {
             display: inline-flex;
@@ -75,6 +76,10 @@
             opacity: 0.55;
             cursor: not-allowed;
         }
+        .knowledge-ok {
+            color: var(--green);
+            font-size: 14px;
+        }
         .chunk {
             padding: 12px 0;
             border-top: 1px solid var(--border);
@@ -83,8 +88,18 @@
         .chunk-label {
             margin-bottom: 8px;
             font-size: 14px;
+            color: var(--muted);
         }
         audio { width: 100%; margin-top: 6px; }
+        .transcript-panel {
+            margin-top: 12px;
+        }
+        .transcript-panel summary {
+            cursor: pointer;
+            color: #8eadff;
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
         pre {
             white-space: pre-wrap;
             overflow-wrap: anywhere;
@@ -95,8 +110,8 @@
             line-height: 1.5;
             max-height: 420px;
             overflow: auto;
+            margin: 0;
         }
-        .ok { color: var(--green); }
         .notice {
             margin-top: 10px;
             color: var(--muted);
@@ -106,41 +121,41 @@
 </head>
 <body>
 <main>
-    <p><a href="/#live-recording">← Back to Live Recording</a></p>
+    <p><a href="/#live-recording">← До Live Recording</a></p>
 
     <h1>{{ session.title }}</h1>
     <div class="meta">
-        <span>Recording status: <strong>{{ session.status }}</strong></span>
-        <span>Date: {{ session.started_at or session.created_at }}</span>
-        <span>Recorded: {{ recorded_label }}</span>
-        {% if session.status == 'completed' %}
-        <span>Wall time: {{ wall_label }}</span>
-        <span>Paused: {{ paused_label }}</span>
+        <span>Статус: <strong>{{ session.status }}</strong></span>
+        <span>{{ session.started_at or session.created_at }}</span>
+        <span>Записано: {{ recorded_label }}</span>
+        {% if session.knowledge.indexed %}
+        <span class="knowledge-ok">База знань: Додано ✓</span>
         {% endif %}
-        <span>Audio parts: {{ session.chunk_count }}</span>
-        <span id="knowledge-status-label">
-            {% if session.knowledge.indexed %}
-            Knowledge Base ✓
-            {% else %}
-            Not indexed
-            {% endif %}
-        </span>
     </div>
 
+    {% if chunks %}
     <div class="panel">
-        <h2>Actions</h2>
+        <h2>Аудіо</h2>
+        {% for chunk in chunks %}
+        <div class="chunk">
+            <div class="chunk-label">{{ chunk.range_label }}</div>
+            {% if chunk.play_url %}
+            <audio controls preload="none" src="{{ chunk.play_url }}"></audio>
+            {% else %}
+            <p class="muted">Аудіо недоступне</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="panel">
+        <h2>Дії</h2>
         <div class="actions">
             {% if session.has_recording_transcript or session.has_lesson_txt %}
-            <a class="button secondary" href="/api/live/sessions/{{ session.session_id }}/transcript.txt" target="_blank" rel="noopener">
-                View Transcript
-            </a>
             <a class="button secondary" href="/api/live/sessions/{{ session.session_id }}/transcript.txt?download=1">
-                Download Transcript
+                Завантажити TXT
             </a>
-            {% endif %}
-
-            {% if chunks %}
-            <a class="button secondary" href="#audio-parts">Listen</a>
             {% endif %}
 
             {% if not session.knowledge.indexed %}
@@ -150,18 +165,10 @@
                 type="button"
                 {% if not session.knowledge.can_add %}disabled{% endif %}
             >
-                Add to Knowledge
+                Додати в базу знань
             </button>
             {% else %}
-            <button class="button secondary" type="button" disabled>
-                Knowledge Base ✓
-            </button>
-            <button id="knowledge-reindex-btn" class="button secondary" type="button">
-                Reindex
-            </button>
-            <button id="knowledge-remove-btn" class="button danger" type="button">
-                Remove from Knowledge
-            </button>
+            <span class="knowledge-ok">База знань: Додано ✓</span>
             {% endif %}
 
             {% if session.status in ['completed', 'cancelled', 'failed'] %}
@@ -171,45 +178,21 @@
                 type="button"
                 data-indexed="{{ '1' if session.knowledge.indexed else '0' }}"
             >
-                Delete Recording
+                Видалити запис
             </button>
             {% endif %}
         </div>
-        <p class="notice" id="knowledge-note">
-            Knowledge and local recording assets are independent.
-            Delete Recording never removes Knowledge.
-        </p>
         <p class="notice" id="action-message"></p>
-    </div>
 
-    <div class="panel" id="audio-parts">
-        <h2>Audio parts</h2>
-        {% if chunks %}
-            {% for chunk in chunks %}
-            <div class="chunk">
-                <div class="chunk-label">
-                    #{{ chunk.chunk_index }}
-                    · {{ chunk.range_label }}
-                    · {{ chunk.status }}
-                </div>
-                {% if chunk.play_url %}
-                <audio controls preload="none" src="{{ chunk.play_url }}"></audio>
-                {% else %}
-                <p class="muted">Audio file unavailable</p>
-                {% endif %}
-            </div>
-            {% endfor %}
-        {% else %}
-            <p class="muted">No stored audio parts.</p>
-        {% endif %}
-    </div>
-
-    <div class="panel">
-        <h2>Recording transcript</h2>
         {% if transcript %}
-        <pre>{{ transcript }}</pre>
+        <details class="transcript-panel" open>
+            <summary>Переглянути транскрипцію</summary>
+            <pre>{{ transcript }}</pre>
+        </details>
+        {% elif session.status == 'processing' %}
+        <p class="notice">Транскрипція ще формується…</p>
         {% else %}
-        <p class="muted">Transcript is not assembled yet.</p>
+        <p class="notice">Транскрипція ще недоступна.</p>
         {% endif %}
     </div>
 </main>
@@ -218,20 +201,15 @@
     const sessionId = "{{ session.session_id }}";
     const deleteBtn = document.getElementById("delete-btn");
     const addBtn = document.getElementById("knowledge-add-btn");
-    const reindexBtn = document.getElementById("knowledge-reindex-btn");
-    const removeBtn = document.getElementById("knowledge-remove-btn");
     const message = document.getElementById("action-message");
 
     const INDEXED_DELETE_CONFIRM =
-        "This recording is indexed in the Knowledge Base.\n"
-        + "Audio and local transcription will be removed.\n"
-        + "Knowledge Base data will remain.\n"
-        + "Continue?";
+        "Цей запис уже додано в базу знань.\n"
+        + "Локальне аудіо та транскрипція будуть видалені,\n"
+        + "але інформація залишиться в базі знань.\n"
+        + "Продовжити?";
     const NORMAL_DELETE_CONFIRM =
-        "Delete this recording? Local audio and transcript will be removed.";
-    const REMOVE_KNOWLEDGE_CONFIRM =
-        "Remove this recording from the Knowledge Base?\n"
-        + "Local audio and transcripts will remain.";
+        "Видалити цей запис разом з аудіо та транскрипцією?";
 
     async function api(url, options) {
         const response = await fetch(url, options || {});
@@ -254,44 +232,6 @@
             } catch (error) {
                 message.textContent = String(error.message || error);
                 addBtn.disabled = false;
-            }
-        });
-    }
-
-    if (reindexBtn) {
-        reindexBtn.addEventListener("click", async () => {
-            reindexBtn.disabled = true;
-            try {
-                await api(
-                    "/api/live/sessions/"
-                        + encodeURIComponent(sessionId)
-                        + "/knowledge/reindex",
-                    { method: "POST" }
-                );
-                message.textContent = "Reindexed in Knowledge Base.";
-                reindexBtn.disabled = false;
-            } catch (error) {
-                message.textContent = String(error.message || error);
-                reindexBtn.disabled = false;
-            }
-        });
-    }
-
-    if (removeBtn) {
-        removeBtn.addEventListener("click", async () => {
-            if (!window.confirm(REMOVE_KNOWLEDGE_CONFIRM)) {
-                return;
-            }
-            removeBtn.disabled = true;
-            try {
-                await api(
-                    "/api/live/sessions/" + encodeURIComponent(sessionId) + "/knowledge",
-                    { method: "DELETE" }
-                );
-                window.location.reload();
-            } catch (error) {
-                message.textContent = String(error.message || error);
-                removeBtn.disabled = false;
             }
         });
     }

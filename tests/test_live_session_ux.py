@@ -196,7 +196,8 @@ def test_index_keeps_completed_lesson_in_ui_contract(api_client):
     assert "live-wave" in html
     assert "Записано:" in html
     assert "Пауза:" in html
-    assert "Cancel the current recording?" in html
+    assert "Cancel the current recording?" not in html
+    assert "Скасувати поточний запис?" in html
     assert ">Elapsed<" not in html
     assert ">Chunks<" not in html
     assert "clearOnStop" in html

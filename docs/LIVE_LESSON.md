@@ -1,24 +1,33 @@
 # Live Recording Mode
 
-Additive feature for Audio Lab: capture macOS **system audio only**, chunk live, transcribe via Homelab Core while recording continues.
+Audio Lab is a **temporary ingestion layer**: capture → transcribe → review → add to Knowledge Base → optionally delete local recording. Long-term retrieval is via Knowledge Base + Qwen.
 
-Audio Lab is a generic **Audio Knowledge Capture** system (lectures, podcasts, meetings, voice notes — not lesson-specific).
+Recordings may be lectures, podcasts, meetings, YouTube audio, interviews, or any useful system audio — not lesson-specific.
+
+## Philosophy
+
+```text
+Audio Lab     = capture / transcribe / review / ingest
+Knowledge Base = persistent memory
+Qwen          = retrieval + reasoning
+```
+
+Recent Recordings is a **temporary inbox**, not a permanent media library. No recording search, filters, or archive management UI.
 
 ## Two independent layers
 
-**Layer A — Local assets**
+**Layer A — Local recording**
 
 - `session.json`, audio chunks, transcripts, assembled `lesson.txt` (internal filename)
 
 **Layer B — Knowledge**
 
-- Stable `knowledge_id` / `document_id`
-- Knowledge registry + (when wired) Qdrant vectors
+- Stable `knowledge_id` / `document_id`, registry + (when wired) Qdrant vectors
 
-Deletion never cascades between layers:
+Deletion never cascades:
 
-- **Delete Recording** → local assets only; Knowledge remains
-- **Remove from Knowledge** → Knowledge only; local audio/transcripts remain
+- **Видалити запис** → local assets only; Knowledge remains
+- **Видалити з бази знань** → managed separately (API / Homelab Core), not on Recent Recordings UI
 
 ## Architecture
 

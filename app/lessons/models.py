@@ -223,7 +223,7 @@ class LessonSession(BaseModel):
                 "indexed": False,
                 "knowledge_id": None,
                 "document_id": None,
-                "message": "Not indexed",
+                "message": "Не в базі знань",
                 "can_add": True,
                 "can_reindex": False,
                 "can_remove": False,
