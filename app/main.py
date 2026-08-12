@@ -1,6 +1,7 @@
 import json
 import os
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -205,6 +206,10 @@ def file_info(
         "name": path.name,
         "size": stat.st_size,
         "modified": int(stat.st_mtime),
+        "queued_at": datetime.fromtimestamp(
+            stat.st_mtime,
+            tz=timezone.utc,
+        ).isoformat(),
         "suffix": path.suffix.lower(),
     }
 
@@ -298,6 +303,24 @@ async def audio_tasks() -> dict[str, Any]:
             "tasks": [],
             "total": 0,
         }
+
+
+def is_live_chunk_task(task: dict[str, Any]) -> bool:
+    """Internal Mac recording chunks must not appear as recordings."""
+    payload = task.get("payload")
+    if not isinstance(payload, dict):
+        payload = {}
+    return (
+        task.get("source") == "live_lesson"
+        or payload.get("source") == "live_lesson"
+    )
+
+
+def task_source_name(task: dict[str, Any]) -> str | None:
+    source = task.get("source_file") or task.get("file_path")
+    if not source:
+        return None
+    return Path(str(source)).name
 
 
 async def search_knowledge(
@@ -425,17 +448,11 @@ async def call_core_action(
 
         if isinstance(payload, dict):
             status = payload.get("status")
-            chunk_count = payload.get(
-                "chunk_count"
-            )
 
             if status == "indexed":
                 return (
                     True,
-                    (
-                        "Транскрипцію додано в базу знань. "
-                        f"Фрагментів: {chunk_count or 0}."
-                    ),
+                    "Added to Knowledge",
                     payload,
                 )
 
@@ -486,33 +503,6 @@ async def live_recording_detail(
             detail=str(exc),
         ) from exc
 
-    chunks = []
-    for chunk in session.get("chunks") or []:
-        filename = chunk.get("filename")
-        play_url = None
-        if filename:
-            audio_path = (
-                lesson_service.store.session_dir(session_id)
-                / "audio"
-                / Path(filename).name
-            )
-            if audio_path.is_file():
-                play_url = (
-                    f"/api/live/sessions/{session_id}/audio/"
-                    f"{Path(filename).name}"
-                )
-        chunks.append(
-            {
-                **chunk,
-                "range_label": (
-                    f"{format_timestamp(chunk.get('start_offset_seconds', 0))}"
-                    f"–"
-                    f"{format_timestamp(chunk.get('end_offset_seconds', 0))}"
-                ),
-                "play_url": play_url,
-            }
-        )
-
     transcript = ""
     lesson_path = lesson_service.store.lesson_txt_path(session_id)
     if lesson_path.is_file():
@@ -525,7 +515,6 @@ async def live_recording_detail(
     return HTMLResponse(
         template.render(
             session=session,
-            chunks=chunks,
             transcript=transcript,
             recorded_label=format_timestamp(
                 session.get("captured_duration_seconds", 0)
@@ -547,18 +536,7 @@ async def live_recording_detail(
 async def index(
     request: Request,
 ) -> HTMLResponse:
-    status = await core_status()
     tasks_payload = await audio_tasks()
-
-    search_query = request.query_params.get(
-        "q",
-        "",
-    ).strip()
-
-    search_payload = await search_knowledge(
-        search_query,
-        limit=8,
-    )
 
     raw_tasks = tasks_payload.get(
         "tasks",
@@ -569,6 +547,7 @@ async def index(
         task
         for task in raw_tasks
         if isinstance(task, dict)
+        and not is_live_chunk_task(task)
     ]
 
     active_tasks = [
@@ -578,8 +557,32 @@ async def index(
         in {
             "waiting",
             "running",
+            "failed",
         }
     ]
+
+    known_task_sources = {
+        source.casefold()
+        for task in tasks
+        if (source := task_source_name(task))
+    }
+    queued_files = [
+        {
+            "id": f"queued:{item['name']}",
+            "status": "queued",
+            "source_file": item["name"],
+            "created_at": item["queued_at"],
+            "error": None,
+            "local_queue": True,
+        }
+        for item in list_folder("incoming")
+        if item["name"].casefold() not in known_task_sources
+    ]
+    active_recordings = queued_files + active_tasks
+    polling_active = bool(queued_files) or any(
+        task.get("status") in {"waiting", "running"}
+        for task in active_tasks
+    )
 
     completed_tasks = [
         task
@@ -596,30 +599,9 @@ async def index(
             if str(t.get("id") or "") not in locally_deleted
         ]
 
-    failed_tasks = [
-        task
-        for task in tasks
-        if task.get("status")
-        == "failed"
-    ]
-
     template = templates.get_template(
         "index.html"
     )
-
-    archive_files = list_folder("archive")
-    for item in archive_files:
-        knowledge_doc = knowledge_service.is_filename_indexed(item["name"])
-        item["knowledge_indexed"] = bool(knowledge_doc)
-        item["knowledge_id"] = (
-            knowledge_doc["knowledge_id"] if knowledge_doc else None
-        )
-
-    folders = {
-        folder: list_folder(folder)
-        for folder in FOLDERS
-    }
-    folders["archive"] = archive_files
 
     # Enrich completed tasks with stable knowledge ids from local registry.
     for task in completed_tasks:
@@ -649,12 +631,10 @@ async def index(
 
     return HTMLResponse(
         template.render(
-            status=status,
             tasks=tasks,
-            active_tasks=active_tasks,
+            active_tasks=active_recordings,
+            polling_active=polling_active,
             completed_tasks=completed_tasks,
-            failed_tasks=failed_tasks,
-            folders=folders,
             max_upload_mb=MAX_UPLOAD_MB,
             success=request.query_params.get(
                 "success"
@@ -662,10 +642,6 @@ async def index(
             error=request.query_params.get(
                 "error"
             ),
-            search_query=search_payload["query"],
-            search_results=search_payload["results"],
-            search_count=search_payload["count"],
-            search_error=search_payload["error"],
         )
     )
 
@@ -754,8 +730,8 @@ async def upload(
             "/?success="
             + quote(
                 (
-                    f"Файл «{destination.name}» "
-                    "додано в чергу."
+                    f"{destination.name}: "
+                    "Added to transcription queue"
                 )
             )
             + "#tasks"
@@ -1036,6 +1012,21 @@ async def local_delete_completed_task(
 async def index_task(
     task_id: str,
 ) -> RedirectResponse:
+    tasks_payload = await audio_tasks()
+    matching = next(
+        (
+            task
+            for task in tasks_payload.get("tasks", [])
+            if isinstance(task, dict) and str(task.get("id")) == task_id
+        ),
+        None,
+    )
+    if matching is not None and is_live_chunk_task(matching):
+        raise HTTPException(
+            status_code=409,
+            detail="Live recording chunks are internal and cannot be added separately",
+        )
+
     ok, message, payload = await call_core_action(
         method="POST",
         endpoint=f"/knowledge/documents/{task_id}/index",
@@ -1221,4 +1212,24 @@ async def health() -> dict[str, Any]:
             )
             for folder in FOLDERS
         },
+    }
+
+
+@app.get("/api/system-status")
+async def system_status() -> dict[str, Any]:
+    """Compact Audio Lab readiness derived from the existing Core dashboard."""
+    status = await core_status()
+    core_ready = bool(status and status.get("status") == "ok")
+    whisper = status.get("whisper") if isinstance(status, dict) else None
+    if not isinstance(whisper, dict):
+        whisper = {}
+
+    return {
+        "core": "Ready" if core_ready else "Offline",
+        "whisper_mac": (
+            "Ready" if whisper.get("mac_running") else "Offline"
+        ),
+        "whisper_server": (
+            "Ready" if whisper.get("server_running") else "Offline"
+        ),
     }

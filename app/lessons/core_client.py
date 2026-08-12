@@ -38,6 +38,32 @@ class CoreTaskClient:
                 return None
             raise
 
+    async def register_knowledge_document(
+        self,
+        *,
+        document_id: str,
+        text_path: str,
+        source_filename: str,
+    ) -> dict[str, Any]:
+        return await self._request(
+            "POST",
+            "/knowledge/transcriptions",
+            json={
+                "document_id": document_id,
+                "text_path": text_path,
+                "source_filename": source_filename,
+            },
+        )
+
+    async def index_knowledge_document(
+        self,
+        document_id: str,
+    ) -> dict[str, Any]:
+        return await self._request(
+            "POST",
+            f"/knowledge/documents/{document_id}/index",
+        )
+
     async def _request(
         self,
         method: str,

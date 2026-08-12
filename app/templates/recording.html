@@ -126,25 +126,10 @@
     <h1>{{ session.title }}</h1>
     <div class="meta">
         <span>Статус: <strong>{{ session.status }}</strong></span>
+        <span>Мова: {{ session.language }}</span>
         <span>{{ session.started_at or session.created_at }}</span>
         <span>Записано: {{ recorded_label }}</span>
     </div>
-
-    {% if chunks %}
-    <div class="panel">
-        <h2>Аудіо</h2>
-        {% for chunk in chunks %}
-        <div class="chunk">
-            <div class="chunk-label">{{ chunk.range_label }}</div>
-            {% if chunk.play_url %}
-            <audio controls preload="none" src="{{ chunk.play_url }}"></audio>
-            {% else %}
-            <p class="muted">Аудіо недоступне</p>
-            {% endif %}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
 
     <div class="panel">
         <h2>Дії</h2>
@@ -153,6 +138,14 @@
             <a class="button secondary" href="/api/live/sessions/{{ session.session_id }}/transcript.txt?download=1">
                 Завантажити TXT
             </a>
+            {% endif %}
+
+            {% if session.status == 'completed' and session.knowledge.can_add %}
+            <button id="knowledge-add-btn" type="button">
+                Add to Knowledge
+            </button>
+            {% elif session.knowledge.indexed %}
+            <span class="knowledge-ok">Added to Knowledge</span>
             {% endif %}
 
             {% if session.status in ['completed', 'cancelled', 'failed'] %}
@@ -183,6 +176,7 @@
 <script>
     const sessionId = "{{ session.session_id }}";
     const deleteBtn = document.getElementById("delete-btn");
+    const knowledgeAddBtn = document.getElementById("knowledge-add-btn");
     const message = document.getElementById("action-message");
 
     const NORMAL_DELETE_CONFIRM =
@@ -212,6 +206,29 @@
             } catch (error) {
                 message.textContent = String(error.message || error);
                 deleteBtn.disabled = false;
+            }
+        });
+    }
+
+    if (knowledgeAddBtn) {
+        knowledgeAddBtn.addEventListener("click", async () => {
+            knowledgeAddBtn.disabled = true;
+            message.textContent = "Adding to Knowledge…";
+            try {
+                await api(
+                    "/api/live/sessions/" + encodeURIComponent(sessionId) + "/knowledge",
+                    { method: "POST" }
+                );
+                knowledgeAddBtn.replaceWith(
+                    Object.assign(document.createElement("span"), {
+                        className: "knowledge-ok",
+                        textContent: "Added to Knowledge",
+                    })
+                );
+                message.textContent = "";
+            } catch (error) {
+                message.textContent = String(error.message || error);
+                knowledgeAddBtn.disabled = false;
             }
         });
     }

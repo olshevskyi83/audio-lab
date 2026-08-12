@@ -58,7 +58,7 @@ async def test_rollover_continues_same_session(lesson_env):
     )
 
 
-def test_audio_preserved_and_servable_after_transcription(api_client):
+def test_audio_preserved_but_hidden_as_internal_detail(api_client):
     client, service, _, core = api_client
     started = client.post(
         "/api/live/sessions/start",
@@ -90,14 +90,14 @@ def test_audio_preserved_and_servable_after_transcription(api_client):
 
     detail = client.get(f"/live/sessions/{sid}")
     assert detail.status_code == 200
-    assert "00:00:00–00:10:00" in detail.text or "00:00–00:10:00" in detail.text
-    assert "Додати в базу знань" not in detail.text
+    assert "00:00:00–00:10:00" not in detail.text
+    assert "Add to Knowledge" in detail.text
     assert "Видалити локальну копію" in detail.text
     assert "Переглянути транскрипцію" in detail.text
     assert "Завантажити TXT" in detail.text
     assert "Видалити локальну копію" in detail.text
     assert "Видалити урок" not in detail.text
-    assert "<audio" in detail.text
+    assert "<audio" not in detail.text
 
 
 def test_stop_moves_lesson_to_recent_list(api_client):
@@ -146,7 +146,6 @@ def test_active_ui_hides_debug_counters(api_client):
     assert ">Chunks<" not in html
     assert "live-chunk-counts" not in html
     assert "/live/sessions/" in html
-    assert "Додати в базу знань" in client.get("/").text or True
 
 
 def test_delete_removes_audio_transcript_session(api_client):

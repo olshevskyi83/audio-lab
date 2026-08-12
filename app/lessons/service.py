@@ -188,9 +188,53 @@ class LessonService:
                 "Recording transcript is not ready yet",
                 status_code=409,
             )
+        transcript_path = self.store.lesson_txt_path(session_id)
+        try:
+            text_path = transcript_path.resolve().relative_to(
+                self.settings.audio_root.resolve()
+            ).as_posix()
+        except ValueError as exc:
+            raise LessonError(
+                "Recording transcript is outside AUDIO_ROOT",
+                status_code=409,
+            ) from exc
+
+        expected_text_path = f"sessions/{session_id}/lesson.txt"
+        if text_path != expected_text_path:
+            raise LessonError(
+                "Recording transcript is not the assembled session transcript",
+                status_code=409,
+            )
+
+        document_id = f"audio-session-{session_id}"
+        recorded_at = datetime.fromisoformat(
+            session.started_at or session.created_at
+        )
+        title = " ".join(session.title.split()).removesuffix(".txt").strip()
+        title = title.replace("/", "-").replace("\\", "-")
+        source_filename = (
+            f"{title or 'Untitled recording'}"
+            f" — {recorded_at.strftime('%d.%m.%Y')}.txt"
+        )
+        try:
+            await self.core.register_knowledge_document(
+                document_id=document_id,
+                text_path=text_path,
+                source_filename=source_filename,
+            )
+            await self.core.index_knowledge_document(document_id)
+        except CoreClientError as exc:
+            raise LessonError(
+                f"Failed to add recording to Knowledge: {exc}",
+                status_code=exc.status_code or 502,
+            ) from exc
+
         doc = self.knowledge.add_for_live_recording(
             session_id=session_id,
             title=session.title,
+            document_id=document_id,
+            text_path=text_path,
+            source_filename=source_filename,
         )
         payload = self._public(session)
         payload["knowledge_document"] = doc

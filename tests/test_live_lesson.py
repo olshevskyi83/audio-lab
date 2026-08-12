@@ -9,6 +9,7 @@ import pytest
 from app.lessons.assembly import assemble_from_texts, format_timestamp
 from app.lessons.auth import require_live_token
 from app.lessons.config import LiveLessonSettings
+from app.lessons.core_client import CoreTaskClient
 from app.lessons.models import ChunkStatus, LessonChunk, LessonSession, SessionStatus, utc_now_iso
 from app.lessons.service import LessonError, LessonService
 from app.lessons.storage import SessionStore
@@ -34,6 +35,36 @@ def make_wav(samples: int = 1600, sample_rate: int = 16000) -> bytes:
     )
     pcm = b"\x00\x10" * samples
     return header + pcm
+
+
+@pytest.mark.asyncio
+async def test_core_registers_mac_transcript_with_safe_endpoint(monkeypatch):
+    client = CoreTaskClient(base_url="http://core.test")
+    calls = []
+
+    async def fake_request(method, path, *, json=None):
+        calls.append((method, path, json))
+        return {"status": "registered"}
+
+    monkeypatch.setattr(client, "_request", fake_request)
+
+    await client.register_knowledge_document(
+        document_id="audio-session-stable-id",
+        text_path="sessions/stable-id/lesson.txt",
+        source_filename="German Lesson — 11.08.2026.txt",
+    )
+
+    assert calls == [
+        (
+            "POST",
+            "/knowledge/transcriptions",
+            {
+                "document_id": "audio-session-stable-id",
+                "text_path": "sessions/stable-id/lesson.txt",
+                "source_filename": "German Lesson — 11.08.2026.txt",
+            },
+        )
+    ]
 
 
 class FakeCapture:
@@ -71,6 +102,8 @@ class FakeCore:
     def __init__(self) -> None:
         self.tasks: dict[str, dict] = {}
         self.created: list[dict] = []
+        self.knowledge_registrations: list[dict] = []
+        self.knowledge_indexes: list[str] = []
         self._n = 0
 
     async def create_whisper_task(self, payload):
@@ -96,6 +129,25 @@ class FakeCore:
             return None
         task["status"] = "cancelled"
         return task
+
+    async def register_knowledge_document(
+        self,
+        *,
+        document_id,
+        text_path,
+        source_filename,
+    ):
+        registration = {
+            "document_id": document_id,
+            "text_path": text_path,
+            "source_filename": source_filename,
+        }
+        self.knowledge_registrations.append(registration)
+        return registration
+
+    async def index_knowledge_document(self, document_id):
+        self.knowledge_indexes.append(document_id)
+        return {"document_id": document_id, "status": "indexed"}
 
     def complete(self, task_id: str, text: str) -> None:
         self.tasks[task_id]["status"] = "completed"

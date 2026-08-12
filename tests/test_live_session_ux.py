@@ -191,7 +191,7 @@ def test_index_keeps_completed_lesson_in_ui_contract(api_client):
     client, _, _, _ = api_client
     html = client.get("/").text
     assert "Recent Recordings" in html
-    assert "LIVE RECORDING" in html
+    assert "Record Mac system audio" in html
     assert "live-recent-list" in html
     assert "live-wave" in html
     assert "Записано:" in html
@@ -215,7 +215,7 @@ def test_live_actions_are_not_blocked_by_secondary_refreshes(api_client):
     assert "void refreshRecentRecordings()" in html
 
 
-def test_knowledge_controls_exist_only_for_completed_core_tasks(api_client):
+def test_audio_lab_exposes_only_add_to_knowledge(api_client):
     client, _, _, _ = api_client
     dashboard = client.get("/").text
     template = (
@@ -228,9 +228,181 @@ def test_knowledge_controls_exist_only_for_completed_core_tasks(api_client):
     assert 'deleteButton.textContent = "Видалити локальну копію"' in template
     assert '{ method: "DELETE" }' in template
     assert 'action="/tasks/{{ task.id }}/index"' in template
-    assert 'action="/tasks/{{ task.id }}/reindex"' in template
-    assert 'action="/tasks/{{ task.id }}/unindex"' in template
-    assert "Видалити транскрипцію з Homelab Knowledge?" in template
+    assert 'action="/tasks/{{ task.id }}/reindex"' not in template
+    assert 'action="/tasks/{{ task.id }}/unindex"' not in template
+    assert "Пошук у транскрипціях" not in template
+    assert "Запитати базу знань" not in template
+    assert "LM Studio" not in template
+    assert "AI Platform" not in template
+    assert "<span>Mac</span>" not in template
+    assert "Архів аудіо" not in template
+    assert 'liveFetch("/api/live/agent")' in template
+    assert 'liveFetch("/api/system-status"' in template
+    assert "refreshSystemStatus()" in template
+    assert "7500" in template
+    assert 'id="core-system-status"' in template
+    assert 'id="mac-system-status"' in template
+    assert 'id="whisper-mac-system-status"' in template
+    assert 'id="whisper-server-system-status"' in template
+    assert 'class="system-status"' in template
+    assert 'class="metric"' not in template
+
+
+def test_incoming_file_is_visible_as_queued(api_client):
+    client, service, _, _ = api_client
+    incoming = service.settings.audio_root / "incoming"
+    incoming.mkdir(parents=True, exist_ok=True)
+    (incoming / "queued-interview.wav").write_bytes(make_wav())
+
+    html = client.get("/").text
+    assert "queued-interview.wav" in html
+    assert "Queued" in html
+
+
+def test_microphone_upload_is_immediately_visible_as_queued(api_client):
+    client, _, _, _ = api_client
+    response = client.post(
+        "/upload",
+        files={
+            "file": (
+                "recording-2026-08-11.webm",
+                b"browser-media-recorder",
+                "audio/webm",
+            )
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert "Added to transcription queue" in response.text
+    assert "recording-2026-08-11.webm" in response.text
+    assert "Queued" in response.text
+
+
+def test_queued_item_is_replaced_by_core_task_without_duplication(
+    api_client,
+    monkeypatch,
+):
+    client, service, _, _ = api_client
+    import app.main as main_module
+
+    incoming = service.settings.audio_root / "incoming"
+    incoming.mkdir(parents=True, exist_ok=True)
+    (incoming / "same-name.wav").write_bytes(make_wav())
+
+    async def tasks():
+        return {
+            "tasks": [
+                {
+                    "id": "core-task",
+                    "status": "waiting",
+                    "source_file": "same-name.wav",
+                    "created_at": "2026-08-11T10:00:00+00:00",
+                    "index": {"index_status": "not_indexed"},
+                }
+            ],
+            "total": 1,
+        }
+
+    monkeypatch.setattr(main_module, "audio_tasks", tasks)
+    html = client.get("/").text
+    assert html.count("same-name.wav") == 2  # title attribute + visible filename
+    assert "Waiting" in html
+    assert "Queued" not in html
+
+
+def test_core_task_lifecycle_moves_from_active_to_completed(
+    api_client,
+    monkeypatch,
+):
+    client, _, _, _ = api_client
+    import app.main as main_module
+
+    state = {"status": "running"}
+
+    async def tasks():
+        task = {
+            "id": "lifecycle-task",
+            "status": state["status"],
+            "source_file": "lifecycle.wav",
+            "created_at": "2026-08-11T10:00:00+00:00",
+            "index": {"index_status": "not_indexed"},
+        }
+        if state["status"] == "completed":
+            task["result"] = {"output_files": ["ready/lifecycle.txt"]}
+        return {"tasks": [task], "total": 1}
+
+    monkeypatch.setattr(main_module, "audio_tasks", tasks)
+    active_html = client.get("/").text
+    assert "Transcribing" in active_html
+    assert "lifecycle.wav" in active_html
+
+    state["status"] = "completed"
+    completed_html = client.get("/").text
+    assert "Completed recordings" in completed_html
+    assert "Відкрити TXT" in completed_html
+    assert "Transcribing" not in completed_html
+
+
+def test_live_chunk_tasks_are_hidden_from_generic_ui(api_client, monkeypatch):
+    client, _, _, _ = api_client
+    import app.main as main_module
+
+    live_chunk = {
+        "id": "live-chunk-task",
+        "status": "completed",
+        "source_file": "chunk_0001.wav",
+        "payload": {"source": "live_lesson", "session_id": "recording-1"},
+        "result": {"output_files": ["ready/chunk_0001.txt"]},
+        "index": {"index_status": "not_indexed"},
+    }
+    uploaded_recording = {
+        "id": "uploaded-task",
+        "status": "completed",
+        "source_file": "interview.wav",
+        "payload": {"source": "audio_lab"},
+        "result": {"output_files": ["ready/interview.txt"]},
+        "index": {"index_status": "not_indexed"},
+    }
+    async def tasks():
+        return {"tasks": [live_chunk, uploaded_recording], "total": 2}
+
+    monkeypatch.setattr(
+        main_module,
+        "audio_tasks",
+        tasks,
+    )
+
+    html = client.get("/").text
+    assert "live-chunk-task" not in html
+    assert "chunk_0001.wav" not in html
+    assert "interview.wav" in html
+    assert "uploaded-task" in html
+
+
+def test_live_chunk_task_cannot_be_indexed_separately(api_client, monkeypatch):
+    client, _, _, _ = api_client
+    import app.main as main_module
+
+    live_chunk = {
+        "id": "live-chunk-task",
+        "status": "completed",
+        "payload": {"source": "live_lesson", "session_id": "recording-1"},
+    }
+    async def tasks():
+        return {"tasks": [live_chunk], "total": 1}
+
+    monkeypatch.setattr(
+        main_module,
+        "audio_tasks",
+        tasks,
+    )
+
+    response = client.post(
+        "/tasks/live-chunk-task/index",
+        follow_redirects=False,
+    )
+    assert response.status_code == 409
 
 
 @pytest.mark.asyncio

@@ -78,6 +78,43 @@
             color: var(--muted);
         }
 
+        .system-status {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px 20px;
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .system-status-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .system-status-value {
+            color: var(--muted);
+            font-weight: 650;
+        }
+
+        .system-status-value::before {
+            content: "●";
+            margin-right: 5px;
+        }
+
+        .system-status-value.ready {
+            color: var(--green);
+        }
+
+        .system-status-value.warning {
+            color: var(--yellow);
+        }
+
+        .system-status-value.offline {
+            color: var(--red);
+        }
+
         .panel {
             margin-top: 17px;
             padding: 19px;
@@ -445,9 +482,7 @@
             align-items: center;
         }
 
-        input[type="file"],
-        .search-input,
-        .rag-input {
+        input[type="file"] {
             width: 100%;
             min-width: 0;
 
@@ -464,21 +499,7 @@
             padding: 11px;
         }
 
-        .search-input {
-            padding: 11px 13px;
-        }
-
-        .rag-input {
-            min-height: 96px;
-            padding: 12px 13px;
-
-            resize: vertical;
-            line-height: 1.5;
-        }
-
-        input[type="file"]:focus,
-        .search-input:focus,
-        .rag-input:focus {
+        input[type="file"]:focus {
             outline: 2px solid rgba(83, 125, 255, 0.45);
             border-color: var(--blue);
         }
@@ -545,218 +566,6 @@
             }
         }
 
-        .rag-form {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
-
-            gap: 10px;
-            align-items: start;
-        }
-
-        .rag-loading {
-            display: none;
-
-            margin-top: 13px;
-
-            color: var(--yellow);
-        }
-
-        .rag-error {
-            display: none;
-
-            margin-top: 13px;
-
-            color: var(--red);
-        }
-
-        .rag-answer {
-            display: none;
-
-            margin-top: 16px;
-            padding: 17px;
-
-            border-radius: 11px;
-
-            background: var(--panel-soft);
-        }
-
-        .rag-answer-text {
-            margin: 0;
-
-            line-height: 1.65;
-            white-space: pre-wrap;
-            overflow-wrap: anywhere;
-        }
-
-        .rag-sources {
-            display: grid;
-
-            width: 100%;
-            margin-top: 16px;
-
-            gap: 10px;
-        }
-
-        .rag-sources:empty {
-            display: none;
-        }
-
-        .rag-source {
-            display: block;
-
-            width: 100%;
-            min-width: 0;
-
-            padding: 8px 13px;
-
-            border: 1px solid var(--border);
-            border-radius: 9px;
-
-            background: rgba(255, 255, 255, 0.025);
-        }
-
-        .rag-source-toggle {
-            display: flex;
-
-            width: 100%;
-            min-height: 40px;
-            padding: 4px 0;
-
-            align-items: center;
-            justify-content: space-between;
-
-            gap: 14px;
-
-            border: 0;
-            background: transparent;
-            color: var(--text);
-
-            text-align: left;
-
-            cursor: pointer;
-        }
-
-        .rag-source-toggle:hover {
-            background: transparent;
-        }
-
-        .rag-source-name {
-            display: block;
-
-            min-width: 0;
-
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-
-            font-weight: 650;
-        }
-
-        .rag-source-right {
-            display: flex;
-            flex: 0 0 auto;
-            align-items: center;
-
-            gap: 12px;
-        }
-
-        .rag-source-score {
-            color: var(--green);
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .rag-source-arrow {
-            color: var(--muted);
-            font-size: 12px;
-            white-space: nowrap;
-        }
-
-        .rag-source-body {
-            display: none;
-
-            margin-top: 8px;
-            padding: 12px 0 3px;
-
-            border-top: 1px solid var(--border);
-        }
-
-        .rag-source-body.open {
-            display: block;
-        }
-
-        .rag-source-text {
-            margin: 0;
-
-            color: #d8dde6;
-
-            line-height: 1.55;
-            white-space: pre-wrap;
-            overflow-wrap: anywhere;
-        }
-
-        .search-form {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto auto;
-
-            gap: 10px;
-            align-items: center;
-        }
-
-        .search-results {
-            display: grid;
-
-            gap: 11px;
-            margin-top: 16px;
-        }
-
-        .search-result {
-            min-width: 0;
-            padding: 15px;
-
-            border-radius: 11px;
-
-            background: var(--panel-soft);
-        }
-
-        .search-result-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-
-            gap: 12px;
-        }
-
-        .search-result-source {
-            min-width: 0;
-
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-
-            font-weight: 650;
-        }
-
-        .search-score {
-            flex: 0 0 auto;
-
-            color: var(--green);
-
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .search-result-text {
-            margin: 12px 0 0;
-
-            color: #d8dde6;
-
-            line-height: 1.55;
-            white-space: pre-wrap;
-            overflow-wrap: anywhere;
-        }
-
-        .search-result-meta,
         .task-meta {
             display: flex;
             flex-wrap: wrap;
@@ -912,8 +721,6 @@
 
             .audio-input-grid,
             .upload-form,
-            .rag-form,
-            .search-form,
             .task {
                 grid-template-columns: 1fr;
             }
@@ -948,16 +755,6 @@
                 border: 0;
             }
 
-            .rag-source-toggle {
-                align-items: flex-start;
-            }
-
-            .rag-source-right {
-                flex-direction: column;
-                align-items: flex-end;
-
-                gap: 3px;
-            }
         }
     </style>
 </head>
@@ -968,8 +765,27 @@
             <h1>Audio Lab</h1>
 
             <p class="subtitle">
-                Transcription, Knowledge Base, and local RAG
+                Transcribe files, microphone recordings, and Mac system audio
             </p>
+
+            <div class="system-status" aria-label="Audio Lab system status">
+                <span class="system-status-item">
+                    Core
+                    <span id="core-system-status" class="system-status-value offline">Checking</span>
+                </span>
+                <span class="system-status-item">
+                    Mac Capture
+                    <span id="mac-system-status" class="system-status-value offline">Checking</span>
+                </span>
+                <span class="system-status-item">
+                    Whisper Mac
+                    <span id="whisper-mac-system-status" class="system-status-value offline">Checking</span>
+                </span>
+                <span class="system-status-item">
+                    Whisper Server
+                    <span id="whisper-server-system-status" class="system-status-value offline">Checking</span>
+                </span>
+            </div>
         </header>
 
         {% if success %}
@@ -984,109 +800,9 @@
         </div>
         {% endif %}
 
-        <section class="panel">
-            <h2>AI Platform</h2>
-
-            {% if status %}
-            <div class="metrics">
-                <div class="metric">
-                    <span>Homelab Core</span>
-
-                    <strong class="{{
-                        'ok'
-                        if status.status == 'ok'
-                        else 'danger'
-                    }}">
-                        {{ status.status }}
-                    </strong>
-                </div>
-
-                <div class="metric">
-                    <span>Mac</span>
-
-                    <strong class="{{
-                        'ok'
-                        if status.mac.online
-                        else 'danger'
-                    }}">
-                        {{
-                        'Online'
-                        if status.mac.online
-                        else 'Offline'
-                        }}
-                    </strong>
-                </div>
-
-                <div class="metric">
-                    <span>LM Studio</span>
-
-                    <strong class="{{
-                        'ok'
-                        if status.llm.lm_studio
-                        else 'danger'
-                    }}">
-                        {{
-                        'Ready'
-                        if status.llm.lm_studio
-                        else 'Offline'
-                        }}
-                    </strong>
-                </div>
-
-                <div class="metric">
-                    <span>Mac Whisper</span>
-
-                    <strong class="
-                        {% if status.whisper.mac_running %}
-                            ok
-                        {% elif active_tasks %}
-                            warning
-                        {% endif %}
-                    ">
-                        {% if status.whisper.mac_running %}
-                        Running
-                        {% elif active_tasks %}
-                        Starting / fallback
-                        {% else %}
-                        Sleeping
-                        {% endif %}
-                    </strong>
-                </div>
-
-                <div class="metric">
-                    <span>Server Whisper</span>
-
-                    <strong class="{{
-                        'ok'
-                        if status.whisper.server_running
-                        else 'danger'
-                    }}">
-                        {{
-                        'Ready'
-                        if status.whisper.server_running
-                        else 'Offline'
-                        }}
-                    </strong>
-                </div>
-
-                <div class="metric">
-                    <span>Queue</span>
-
-                    <strong>
-                        {{ status.queue.waiting }} waiting /
-                        {{ status.queue.running }} running
-                    </strong>
-                </div>
-            </div>
-            {% else %}
-            <p class="danger">
-                Homelab Core недоступний.
-            </p>
-            {% endif %}
-        </section>
 
         <section class="panel">
-            <h2>Нова транскрипція</h2>
+            <h2>Transcribe and record</h2>
 
             <div class="audio-input-grid">
                 <div class="input-card">
@@ -1144,11 +860,11 @@
         </section>
 
         <section class="panel" id="live-recording">
-            <h2>LIVE RECORDING</h2>
+            <h2>Record Mac system audio</h2>
 
             <p class="muted">
                 Запис лише системного аудіо macOS (ScreenCaptureKit).
-                Мікрофон не використовується. Чанки транскрибуються під час запису.
+                Мікрофон не використовується. Транскрипція формується під час запису.
             </p>
 
             <div id="live-agent-pill" class="live-agent-pill">
@@ -1229,136 +945,8 @@
             </div>
         </section>
 
-        <section class="panel">
-            <h2>Запитати базу знань</h2>
-
-            <p class="muted">
-                Knowledge Base знайде релевантні транскрипції,
-                а Qwen сформує відповідь лише на основі джерел.
-            </p>
-
-            <form id="rag-form" class="rag-form">
-                <textarea id="rag-query" class="rag-input"
-                    placeholder="Наприклад: яка погода була на вулиці і що говорили про спальню?" required></textarea>
-
-                <button id="rag-submit" type="submit">
-                    Запитати Qwen
-                </button>
-            </form>
-
-            <div id="rag-loading" class="rag-loading">
-                Пошук джерел і формування відповіді…
-            </div>
-
-            <div id="rag-error" class="rag-error"></div>
-
-            <div id="rag-answer" class="rag-answer">
-                <p id="rag-answer-text" class="rag-answer-text"></p>
-
-                <div class="task-meta">
-                    <span id="rag-model"></span>
-                    <span id="rag-source-count"></span>
-                </div>
-
-                <div id="rag-sources" class="rag-sources"></div>
-            </div>
-        </section>
-
-        <section class="panel">
-            <h2>Пошук у транскрипціях</h2>
-
-            <form class="search-form" method="get" action="/">
-                <input class="search-input" type="search" name="q" value="{{ search_query or '' }}"
-                    placeholder="Наприклад: що говорили про погоду?" autocomplete="off">
-
-                <button type="submit">
-                    Шукати
-                </button>
-
-                {% if search_query %}
-                <a class="button secondary" href="/">
-                    Очистити
-                </a>
-                {% endif %}
-            </form>
-
-            {% if search_error %}
-            <div class="notice error">
-                {{ search_error }}
-            </div>
-            {% endif %}
-
-            {% if search_query and not search_error %}
-            <p class="muted" style="margin: 13px 0 0;">
-                Знайдено результатів:
-                {{ search_count }}
-            </p>
-
-            {% if search_results %}
-            <div class="search-results">
-                {% for result in search_results %}
-                <article class="search-result">
-                    <div class="search-result-header">
-                        <div class="search-result-source" title="{{
-                            result.source_filename
-                            or 'Без назви'
-                        }}">
-                            {{
-                            result.source_filename
-                            or 'Без назви'
-                            }}
-                        </div>
-
-                        <div class="search-score">
-                            {{
-                            (
-                            (result.score or 0)
-                            * 100
-                            )
-                            | round(1)
-                            }}%
-                        </div>
-                    </div>
-
-                    <p class="search-result-text">
-                        {{
-                        result.text
-                        or 'Текст відсутній'
-                        }}
-                    </p>
-
-                    <div class="search-result-meta">
-                        <span>
-                            Фрагмент:
-                            {{
-                            (result.chunk_index or 0) + 1
-                            }}
-                            /
-                            {{
-                            result.chunk_count or 1
-                            }}
-                        </span>
-
-                        <span>
-                            Project:
-                            {{
-                            result.project or '—'
-                            }}
-                        </span>
-                    </div>
-                </article>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p class="empty" style="margin-top: 15px;">
-                Нічого релевантного не знайдено.
-            </p>
-            {% endif %}
-            {% endif %}
-        </section>
-
         <section id="tasks" class="panel">
-            <h2>Активні задачі</h2>
+            <h2>Active</h2>
 
             {% if active_tasks %}
             <div class="task-list">
@@ -1378,19 +966,22 @@
 
                         <div class="task-meta">
                             <span class="badge {{ task.status }}">
+                                {% if task.status == 'queued' %}
+                                Queued
+                                {% elif task.status == 'waiting' %}
+                                Waiting
+                                {% elif task.status == 'running' %}
+                                Transcribing
+                                {% elif task.status == 'failed' %}
+                                Failed
+                                {% else %}
                                 {{ task.status }}
+                                {% endif %}
                             </span>
 
-                            <span>
-                                Спроба
-                                {{ task.attempts }}
-                                /
-                                {{ task.max_attempts }}
-                            </span>
-
-                            <span>
-                                Task: {{ task.id }}
-                            </span>
+                            {% if task.created_at %}
+                            <span>{{ task.created_at }}</span>
+                            {% endif %}
                         </div>
 
                         {% if task.error %}
@@ -1400,23 +991,18 @@
                         {% endif %}
                     </div>
 
-                    <div class="task-actions">
-                        <span class="badge running">
-                            Обробка…
-                        </span>
-                    </div>
                 </article>
                 {% endfor %}
             </div>
             {% else %}
             <p class="empty">
-                Активних задач немає.
+                Активних записів немає.
             </p>
             {% endif %}
         </section>
 
         <section class="panel">
-            <h2>Завершені транскрипції</h2>
+            <h2>Completed recordings</h2>
 
             {% if completed_tasks %}
             <div class="task-list">
@@ -1438,37 +1024,7 @@
                             <span class="badge completed">
                                 completed
                             </span>
-
-                            {% set index_status =
-                            task.index.index_status
-                            if task.index
-                            else 'not_indexed'
-                            %}
-
-                            <span class="badge {{ index_status }}">
-                                База знань:
-                                {{ index_status }}
-                            </span>
-
-                            {% if
-                            task.index
-                            and task.index.chunk_count
-                            %}
-                            <span>
-                                {{ task.index.chunk_count }}
-                                chunks
-                            </span>
-                            {% endif %}
                         </div>
-
-                        {% if
-                        task.index
-                        and task.index.error
-                        %}
-                        <p class="danger" style="margin: 8px 0 0;">
-                            {{ task.index.error }}
-                        </p>
-                        {% endif %}
                     </div>
 
                     <div class="task-actions">
@@ -1488,6 +1044,9 @@
                         <a class="button" href="/view/ready/{{ output_name }}">
                             Відкрити TXT
                         </a>
+                        <a class="button secondary" href="/file/ready/{{ output_name }}">
+                            Завантажити TXT
+                        </a>
                         {% endif %}
 
                         {% if output_name.endswith('.json') %}
@@ -1504,24 +1063,13 @@
                         %}
                         <form method="post" action="/tasks/{{ task.id }}/index">
                             <button type="submit">
-                                Додати в базу знань
+                                Add to Knowledge
                             </button>
                         </form>
                         {% else %}
                         <span class="knowledge-ok" style="color: var(--green); font-size: 14px;">
-                            База знань: Додано ✓
+                            Added to Knowledge
                         </span>
-                        <form method="post" action="/tasks/{{ task.id }}/reindex">
-                            <button class="secondary" type="submit">
-                                Переіндексувати
-                            </button>
-                        </form>
-                        <form method="post" action="/tasks/{{ task.id }}/unindex"
-                            onsubmit="return confirm('Видалити транскрипцію з Homelab Knowledge? Локальні аудіо та TXT залишаться.')">
-                            <button class="danger-button" type="submit">
-                                Видалити з бази знань
-                            </button>
-                        </form>
                         {% endif %}
 
                         <form method="post" action="/tasks/{{ task.id }}/local-delete" class="local-delete-form"
@@ -1537,201 +1085,33 @@
             </div>
             {% else %}
             <p class="empty">
-                Завершених транскрипцій немає.
+                Готових записів немає.
             </p>
             {% endif %}
         </section>
 
-        {% if failed_tasks %}
-        <section class="panel">
-            <h2>Помилки</h2>
 
-            <div class="task-list">
-                {% for task in failed_tasks %}
-                <article class="task">
-                    <div class="task-info">
-                        <div class="filename">
-                            {{
-                            task.source_file
-                            or task.file_path
-                            or 'Без назви'
-                            }}
-                        </div>
 
-                        <div class="task-meta">
-                            <span class="badge failed">
-                                failed
-                            </span>
-
-                            <span>
-                                Task: {{ task.id }}
-                            </span>
-                        </div>
-
-                        {% if task.error %}
-                        <p class="danger" style="margin: 8px 0 0;">
-                            {{ task.error }}
-                        </p>
-                        {% endif %}
-                    </div>
-                </article>
-                {% endfor %}
-            </div>
-        </section>
-        {% endif %}
-
-        <section class="panel">
-            <h2>Архів аудіо</h2>
-
-            {% set archive_files = folders.archive %}
-
-            {% if archive_files %}
-            <table class="file-table">
-                <thead>
-                    <tr>
-                        <th class="file-check-cell">
-                            <input type="checkbox" id="archive-select-all" title="Вибрати всі">
-                        </th>
-
-                        <th class="file-name-cell">
-                            Файл
-                        </th>
-
-                        <th class="file-size-cell">
-                            Розмір
-                        </th>
-
-                        <th class="file-actions-cell">
-                            Дії
-                        </th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    {% for file in archive_files %}
-                    <tr>
-                        <td class="file-check-cell">
-                            <input type="checkbox" class="archive-check" name="filename" value="{{ file.name }}"
-                                form="archive-bulk-form">
-                        </td>
-
-                        <td class="file-name-cell">
-                            <span class="file-name" title="{{ file.name }}">
-                                {{ file.name }}
-                            </span>
-                        </td>
-
-                        <td class="file-size-cell">
-                            {{
-                            (
-                            file.size
-                            / 1024
-                            / 1024
-                            )
-                            | round(2)
-                            }}
-                            MB
-                        </td>
-
-                        <td class="file-actions-cell">
-                            <div class="file-actions">
-                                <a class="button secondary" href="/file/archive/{{ file.name }}">
-                                    Завантажити
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-            <div class="archive-bulk-controls" style="display: flex; gap: 9px; margin-top: 12px; align-items: center;">
-                <button id="archive-select-all-btn" type="button" class="secondary">
-                    Вибрати всі
-                </button>
-                <form id="archive-bulk-form" method="post" action="/archive/delete-selected"
-                    onsubmit="return confirm('Видалити вибрані аудіозаписи?')">
-                    <button id="archive-delete-selected" class="danger-button" type="submit" disabled>
-                        Видалити вибрані
-                    </button>
-                </form>
-            </div>
-
-            <script>
-                (function () {
-                    var selectAllCheckbox = document.getElementById("archive-select-all");
-                    var selectAllBtn = document.getElementById("archive-select-all-btn");
-                    var deleteBtn = document.getElementById("archive-delete-selected");
-                    var checks = document.querySelectorAll(".archive-check");
-
-                    function updateState() {
-                        var checked = document.querySelectorAll(".archive-check:checked");
-                        var count = checked.length;
-                        deleteBtn.disabled = count === 0;
-                        deleteBtn.textContent = count > 0 ? "Видалити вибрані (" + count + ")" : "Видалити вибрані";
-                        if (selectAllCheckbox) {
-                            selectAllCheckbox.checked = count === checks.length && checks.length > 0;
-                        }
-                    }
-
-                    if (selectAllCheckbox) {
-                        selectAllCheckbox.addEventListener("change", function () {
-                            var checked = this.checked;
-                            checks.forEach(function (cb) { cb.checked = checked; });
-                            updateState();
-                        });
-                    }
-
-                    if (selectAllBtn) {
-                        selectAllBtn.addEventListener("click", function () {
-                            if (selectAllCheckbox) {
-                                selectAllCheckbox.checked = !selectAllCheckbox.checked;
-                                var checked = selectAllCheckbox.checked;
-                                checks.forEach(function (cb) { cb.checked = checked; });
-                            }
-                            updateState();
-                        });
-                    }
-
-                    checks.forEach(function (cb) {
-                        cb.addEventListener("change", updateState);
-                    });
-                })();
-            </script>
-            {% else %}
-            <p class="empty">
-                Архів порожній.
-            </p>
-            {% endif %}
-        </section>
-
-        <details class="panel technical">
-            <summary>
-                Технічні папки
-            </summary>
-
-            <p style="margin: 15px 0 0;">
-                incoming:
-                {{ folders.incoming | length }}
-                · processing:
-                {{ folders.processing | length }}
-                · ready:
-                {{ folders.ready | length }}
-                · failed:
-                {{ folders.failed | length }}
-            </p>
-        </details>
     </main>
 
     <script>
+        const coreSystemStatus =
+            document.getElementById("core-system-status");
+
+        const whisperMacSystemStatus =
+            document.getElementById("whisper-mac-system-status");
+
+        const whisperServerSystemStatus =
+            document.getElementById("whisper-server-system-status");
+
+        const macSystemStatus =
+            document.getElementById("mac-system-status");
+
         const fileInput =
             document.getElementById("audio-file");
 
         const uploadForm =
             document.getElementById("upload-form");
-
-        const searchInput =
-            document.querySelector(".search-input");
 
         const recordStart =
             document.getElementById("record-start");
@@ -1757,38 +1137,8 @@
         const recordDelete =
             document.getElementById("record-delete");
 
-        const ragForm =
-            document.getElementById("rag-form");
-
-        const ragQuery =
-            document.getElementById("rag-query");
-
-        const ragSubmit =
-            document.getElementById("rag-submit");
-
-        const ragLoading =
-            document.getElementById("rag-loading");
-
-        const ragError =
-            document.getElementById("rag-error");
-
-        const ragAnswer =
-            document.getElementById("rag-answer");
-
-        const ragAnswerText =
-            document.getElementById("rag-answer-text");
-
-        const ragModel =
-            document.getElementById("rag-model");
-
-        const ragSourceCount =
-            document.getElementById("rag-source-count");
-
-        const ragSources =
-            document.getElementById("rag-sources");
-
-        const hasActiveTasks =
-            {{ 'true' if active_tasks else 'false' }};
+        const pollingActive =
+            {{ 'true' if polling_active else 'false' }};
 
         let mediaRecorder = null;
         let mediaStream = null;
@@ -1803,7 +1153,6 @@
 
         let recordingActive = false;
         let uploadInProgress = false;
-        let ragInProgress = false;
 
         function formatDuration(totalSeconds) {
             const minutes =
@@ -1946,14 +1295,16 @@
                     );
                 }
 
+                uploadInProgress = false;
+                resetRecordedDraft();
                 recordStatus.textContent =
-                    "Запис додано в чергу транскрипції.";
+                    "Added to transcription queue";
 
                 window.setTimeout(() => {
                     window.location.href =
                         "/?success="
                         + encodeURIComponent(
-                            "Запис із мікрофона додано в чергу."
+                            "Added to transcription queue"
                         )
                         + "#tasks";
                 }, 500);
@@ -2202,309 +1553,6 @@
             "submit",
             () => {
                 uploadInProgress = true;
-            }
-        );
-
-        function clearRagResults() {
-            ragError.style.display = "none";
-            ragError.textContent = "";
-
-            ragAnswer.style.display = "none";
-
-            ragAnswerText.textContent = "";
-            ragModel.textContent = "";
-            ragSourceCount.textContent = "";
-
-            ragSources.replaceChildren();
-        }
-
-        function createSourceElement(source) {
-            const container =
-                document.createElement("div");
-
-            container.className = "rag-source";
-
-            const header =
-                document.createElement("button");
-
-            header.type = "button";
-            header.className =
-                "rag-source-toggle";
-
-            header.setAttribute(
-                "aria-expanded",
-                "false"
-            );
-
-            const name =
-                document.createElement("span");
-
-            name.className =
-                "rag-source-name";
-
-            const sourceNumber =
-                source.number !== undefined
-                    ? source.number
-                    : "?";
-
-            name.textContent =
-                `[Джерело ${sourceNumber}] `
-                + (
-                    source.source_filename
-                    || "Без назви"
-                );
-
-            name.title =
-                source.source_filename
-                || "";
-
-            const rightSide =
-                document.createElement("span");
-
-            rightSide.className =
-                "rag-source-right";
-
-            const score =
-                document.createElement("span");
-
-            score.className =
-                "rag-source-score";
-
-            const numericScore =
-                Number(source.score || 0);
-
-            score.textContent =
-                `${(numericScore * 100).toFixed(1)}%`;
-
-            const arrow =
-                document.createElement("span");
-
-            arrow.className =
-                "rag-source-arrow";
-
-            arrow.textContent =
-                "Показати джерело ▾";
-
-            rightSide.append(
-                score,
-                arrow
-            );
-
-            header.append(
-                name,
-                rightSide
-            );
-
-            const body =
-                document.createElement("div");
-
-            body.className =
-                "rag-source-body";
-
-            const sourceText =
-                document.createElement("p");
-
-            sourceText.className =
-                "rag-source-text";
-
-            sourceText.textContent =
-                source.text
-                || "Текст джерела відсутній.";
-
-            const metadata =
-                document.createElement("div");
-
-            metadata.className =
-                "task-meta";
-
-            const chunk =
-                document.createElement("span");
-
-            chunk.textContent =
-                "Фрагмент "
-                + (
-                    (
-                        Number(
-                            source.chunk_index
-                        )
-                        || 0
-                    )
-                    + 1
-                )
-                + " / "
-                + (
-                    Number(
-                        source.chunk_count
-                    )
-                    || 1
-                );
-
-            const type =
-                document.createElement("span");
-
-            type.textContent =
-                "Тип: "
-                + (
-                    source.source_type
-                    || "—"
-                );
-
-            metadata.append(
-                chunk,
-                type
-            );
-
-            body.append(
-                sourceText,
-                metadata
-            );
-
-            header.addEventListener(
-                "click",
-                () => {
-                    const opening =
-                        !body.classList.contains(
-                            "open"
-                        );
-
-                    body.classList.toggle(
-                        "open",
-                        opening
-                    );
-
-                    header.setAttribute(
-                        "aria-expanded",
-                        opening
-                            ? "true"
-                            : "false"
-                    );
-
-                    arrow.textContent =
-                        opening
-                            ? "Сховати джерело ▴"
-                            : "Показати джерело ▾";
-                }
-            );
-
-            container.append(
-                header,
-                body
-            );
-
-            return container;
-        }
-
-        ragForm.addEventListener(
-            "submit",
-            async (event) => {
-                event.preventDefault();
-
-                const query =
-                    ragQuery.value.trim();
-
-                if (!query) {
-                    return;
-                }
-
-                clearRagResults();
-
-                ragInProgress = true;
-
-                ragSubmit.disabled = true;
-                ragQuery.disabled = true;
-
-                ragLoading.style.display =
-                    "block";
-
-                try {
-                    const response = await fetch(
-                        "/api/knowledge/chat",
-                        {
-                            method: "POST",
-
-                            headers: {
-                                "Content-Type":
-                                    "application/json",
-                            },
-
-                            body: JSON.stringify({
-                                query,
-                                limit: 5,
-                                temperature: 0.1,
-                            }),
-                        }
-                    );
-
-                    let payload = {};
-
-                    try {
-                        payload =
-                            await response.json();
-                    } catch {
-                        payload = {};
-                    }
-
-                    if (!response.ok) {
-                        throw new Error(
-                            payload.detail
-                            || `HTTP ${response.status}`
-                        );
-                    }
-
-                    ragAnswerText.textContent =
-                        payload.answer
-                        || "Відповідь порожня.";
-
-                    ragModel.textContent =
-                        "Модель: "
-                        + (
-                            payload.model
-                            || "qwen-general"
-                        );
-
-                    const sources =
-                        Array.isArray(
-                            payload.sources
-                        )
-                            ? payload.sources
-                            : [];
-
-                    ragSourceCount.textContent =
-                        `Джерел: ${sources.length}`;
-
-                    for (const source of sources) {
-                        const sourceElement =
-                            createSourceElement(
-                                source
-                            );
-
-                        ragSources.appendChild(
-                            sourceElement
-                        );
-                    }
-
-                    ragAnswer.style.display =
-                        "block";
-
-                } catch (error) {
-                    ragError.textContent =
-                        "Не вдалося отримати відповідь: "
-                        + error.message;
-
-                    ragError.style.display =
-                        "block";
-
-                } finally {
-                    ragInProgress = false;
-
-                    ragLoading.style.display =
-                        "none";
-
-                    ragSubmit.disabled = false;
-                    ragQuery.disabled = false;
-
-                    ragQuery.focus();
-                }
             }
         );
 
@@ -2838,13 +1886,6 @@
                 const badges = document.createElement("div");
                 badges.className = "live-recent-badges";
 
-                if ((session.chunk_count || 0) > 0) {
-                    const audioBadge = document.createElement("span");
-                    audioBadge.className = "live-recent-badge";
-                    audioBadge.textContent = "аудіо";
-                    badges.appendChild(audioBadge);
-                }
-
                 if (session.has_recording_transcript || session.has_lesson_txt) {
                     const txtBadge = document.createElement("span");
                     txtBadge.className = "live-recent-badge ok";
@@ -2943,24 +1984,60 @@
             }
         }
 
+        function setCompactStatus(element, label) {
+            element.textContent = label;
+            element.classList.remove("ready", "warning", "offline");
+            if (["Ready", "Server", "Mac"].includes(label)) {
+                element.classList.add("ready");
+            } else if (["Recording", "Paused", "Processing"].includes(label)) {
+                element.classList.add("warning");
+            } else {
+                element.classList.add("offline");
+            }
+        }
+
+        async function refreshSystemStatus() {
+            try {
+                const payload = await liveFetch("/api/system-status", null, 10000);
+                setCompactStatus(coreSystemStatus, payload.core || "Offline");
+                setCompactStatus(
+                    whisperMacSystemStatus,
+                    payload.whisper_mac || "Offline"
+                );
+                setCompactStatus(
+                    whisperServerSystemStatus,
+                    payload.whisper_server || "Offline"
+                );
+            } catch (_error) {
+                setCompactStatus(coreSystemStatus, "Offline");
+                setCompactStatus(whisperMacSystemStatus, "Offline");
+                setCompactStatus(whisperServerSystemStatus, "Offline");
+            }
+        }
+
         async function refreshLiveAgent() {
             try {
                 const payload = await liveFetch("/api/live/agent");
                 if (payload.available) {
-                    liveAgentPill.textContent = "Capture Agent: online";
+                    const agentState = payload.status && payload.status.state;
+                    const stateLabel = agentState === "recording"
+                        ? "Recording"
+                        : agentState === "paused"
+                            ? "Paused"
+                            : "Ready";
+                    setCompactStatus(macSystemStatus, stateLabel);
+                    liveAgentPill.textContent = "Capture Agent: " + stateLabel;
                     liveAgentPill.classList.remove("danger");
                     liveAgentPill.classList.add("ok");
                 } else {
-                    liveAgentPill.textContent = (
-                        "Capture Agent: offline"
-                        + (payload.error ? (" — " + payload.error) : "")
-                    );
+                    setCompactStatus(macSystemStatus, "Offline");
+                    liveAgentPill.textContent = "Capture Agent: Offline";
                     liveAgentPill.classList.remove("ok");
                     liveAgentPill.classList.add("danger");
                 }
-            } catch (error) {
-                liveAgentPill.textContent =
-                    "Capture Agent: error — " + error.message;
+            } catch (_error) {
+                setCompactStatus(macSystemStatus, "Offline");
+                liveAgentPill.textContent = "Capture Agent: Offline";
                 liveAgentPill.classList.remove("ok");
                 liveAgentPill.classList.add("danger");
             }
@@ -3117,8 +2194,14 @@
             );
         });
 
+        refreshSystemStatus();
         refreshLiveAgent();
         refreshLiveSession();
+        window.setInterval(() => {
+            if (!document.hidden) {
+                refreshSystemStatus();
+            }
+        }, 7500);
         livePollTimer = window.setInterval(() => {
             if (document.hidden || liveInFlight) {
                 return;
@@ -3133,26 +2216,6 @@
                     fileInput
                     && fileInput.files
                     && fileInput.files.length > 0;
-
-                const searchIsActive =
-                    searchInput
-                    && (
-                        document.activeElement
-                        === searchInput
-                        || searchInput.value
-                            .trim()
-                            .length > 0
-                    );
-
-                const ragIsActive =
-                    ragQuery
-                    && (
-                        document.activeElement
-                        === ragQuery
-                        || ragQuery.value
-                            .trim()
-                            .length > 0
-                    );
 
                 const formIsActive =
                     document.activeElement
@@ -3170,16 +2233,13 @@
                     && isLiveInProgress(liveSession.status);
 
                 const canRefresh =
-                    hasActiveTasks
+                    pollingActive
                     && !document.hidden
                     && !fileSelected
-                    && !searchIsActive
-                    && !ragIsActive
                     && !formIsActive
                     && !recordingActive
                     && !recordedBlob
                     && !uploadInProgress
-                    && !ragInProgress
                     && !liveIsActive
                     && !liveInFlight;
 

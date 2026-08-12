@@ -83,6 +83,76 @@ def test_health_and_existing_upload_still_work(api_client, tmp_path: Path):
         follow_redirects=False,
     )
     assert response.status_code == 303
+    queued = client.get("/")
+    assert "note.wav" in queued.text
+    assert "Queued" in queued.text
+
+
+def test_microphone_keeps_browser_blob_upload_pipeline(api_client):
+    client, _, _, _ = api_client
+    html = client.get("/").text
+
+    assert "navigator.mediaDevices.getUserMedia" in html
+    assert "new MediaRecorder" in html
+    assert "new Blob" in html
+    assert '"/upload"' in html
+    assert 'formData.append(' in html
+    assert "mediaRecorder.pause" not in html
+    assert "mediaRecorder.resume" not in html
+
+
+def test_compact_core_and_whisper_status_ready(api_client, monkeypatch):
+    client, _, _, _ = api_client
+    import app.main as main_module
+
+    async def ready_status():
+        return {
+            "status": "ok",
+            "whisper": {
+                "mac_running": True,
+                "server_running": True,
+            },
+        }
+
+    monkeypatch.setattr(main_module, "core_status", ready_status)
+    payload = client.get("/api/system-status").json()
+    assert payload == {
+        "core": "Ready",
+        "whisper_mac": "Ready",
+        "whisper_server": "Ready",
+    }
+
+
+def test_compact_core_and_whisper_status_offline(api_client, monkeypatch):
+    client, _, _, _ = api_client
+    import app.main as main_module
+
+    async def offline_status():
+        return None
+
+    monkeypatch.setattr(main_module, "core_status", offline_status)
+    payload = client.get("/api/system-status").json()
+    assert payload == {
+        "core": "Offline",
+        "whisper_mac": "Offline",
+        "whisper_server": "Offline",
+    }
+
+
+def test_mac_capture_agent_ready_and_offline(api_client, monkeypatch):
+    client, service, _, _ = api_client
+    from app.lessons.capture_client import CaptureAgentError
+
+    ready = client.get("/api/live/agent").json()
+    assert ready["available"] is True
+    assert ready["status"]["state"] == "idle"
+
+    async def offline():
+        raise CaptureAgentError("offline")
+
+    monkeypatch.setattr(service.capture, "status", offline)
+    unavailable = client.get("/api/live/agent").json()
+    assert unavailable["available"] is False
 
 
 def test_chunk_upload_requires_auth(api_client):

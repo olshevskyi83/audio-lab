@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 from tests.test_live_api import api_client  # noqa: F401
@@ -54,6 +55,18 @@ def test_delete_indexed_recording_preserves_knowledge(api_client):
     assert knowledge["indexed"] is True
     knowledge_id = knowledge["knowledge_id"]
     assert knowledge_id
+    session = service.store.load(sid)
+    recording_date = datetime.fromisoformat(
+        session.started_at or session.created_at
+    ).strftime("%d.%m.%Y")
+    assert core.knowledge_registrations == [
+        {
+            "document_id": f"audio-session-{sid}",
+            "text_path": f"sessions/{sid}/lesson.txt",
+            "source_filename": f"Indexed recording — {recording_date}.txt",
+        }
+    ]
+    assert core.knowledge_indexes == [f"audio-session-{sid}"]
 
     session_dir = service.store.session_dir(sid)
     deleted = client.delete(f"/api/live/sessions/{sid}")
@@ -64,6 +77,14 @@ def test_delete_indexed_recording_preserves_knowledge(api_client):
     assert body["knowledge_preserved"] is True
     assert body["knowledge_id"] == knowledge_id
     assert not session_dir.exists()
+    assert core.knowledge_registrations == [
+        {
+            "document_id": f"audio-session-{sid}",
+            "text_path": f"sessions/{sid}/lesson.txt",
+            "source_filename": f"Indexed recording — {recording_date}.txt",
+        }
+    ]
+    assert core.knowledge_indexes == [f"audio-session-{sid}"]
 
     listed = client.get("/api/knowledge/documents").json()["documents"]
     match = next(item for item in listed if item["knowledge_id"] == knowledge_id)
@@ -132,6 +153,38 @@ def test_stable_knowledge_ids_across_reindex(api_client):
     assert second["knowledge"]["knowledge_id"] == kid
 
 
+def test_session_add_to_knowledge_is_one_idempotent_core_document(api_client):
+    client, service, _, core = api_client
+    sid = _complete_recording(client, core, "One recording")
+
+    first = client.post(f"/api/live/sessions/{sid}/knowledge")
+    second = client.post(f"/api/live/sessions/{sid}/knowledge")
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    document_id = f"audio-session-{sid}"
+    session = service.store.load(sid)
+    recording_date = datetime.fromisoformat(
+        session.started_at or session.created_at
+    ).strftime("%d.%m.%Y")
+    assert core.knowledge_indexes == [document_id, document_id]
+    assert {item["document_id"] for item in core.knowledge_registrations} == {
+        document_id
+    }
+    assert core.knowledge_registrations == [{
+        "document_id": f"audio-session-{sid}",
+        "text_path": f"sessions/{sid}/lesson.txt",
+        "source_filename": f"One recording — {recording_date}.txt",
+    }] * 2
+
+    docs = client.get("/api/knowledge/documents").json()["documents"]
+    matches = [item for item in docs if item["source_ref"] == sid]
+    assert len(matches) == 1
+    assert matches[0]["document_id"] == document_id
+    assert matches[0]["vector_backend"] == "core"
+    assert matches[0]["metadata"]["source"] == "homelab-core"
+
+
 def test_knowledge_survives_local_deletion(api_client):
     client, _, _, core = api_client
     sid = _complete_recording(client, core, "Orphan knowledge")
@@ -176,7 +229,7 @@ def test_delete_uploaded_indexed_audio_preserves_knowledge(api_client, tmp_path:
 def test_ui_uses_recording_terminology_not_lesson(api_client):
     client, _, _, core = api_client
     html = client.get("/").text
-    assert "LIVE RECORDING" in html
+    assert "Record Mac system audio" in html
     assert "Recent Recordings" in html
     assert "Назва запису" in html
     assert "Почати запис" in html
@@ -191,18 +244,18 @@ def test_ui_uses_recording_terminology_not_lesson(api_client):
     sid = _complete_recording(client, core, "Detail terms")
     detail = client.get(f"/live/recordings/{sid}").text
     assert "Видалити локальну копію" in detail
-    assert "Додати в базу знань" not in detail
+    assert "Add to Knowledge" in detail
     assert "Переглянути транскрипцію" in detail
     assert "Завантажити TXT" in detail
     assert "Видалити урок" not in detail
     assert "Live Lesson" not in detail
     assert "Remove from Knowledge" not in detail
-    assert "<audio" in detail
+    assert "<audio" not in detail
 
     client.post(f"/api/live/sessions/{sid}/knowledge")
     indexed_detail = client.get(f"/live/recordings/{sid}").text
-    assert "База знань: Додано ✓" not in indexed_detail
-    assert "knowledge-add-btn" not in indexed_detail
+    assert "Added to Knowledge" in indexed_detail
+    assert 'id="knowledge-add-btn"' not in indexed_detail
     assert "Reindex" not in indexed_detail
     assert "Remove from Knowledge" not in indexed_detail
 
@@ -571,8 +624,7 @@ def test_bulk_delete_knowledge_never_called(api_client, tmp_path, monkeypatch):
     assert len(all_docs_after) == count_before
 
 
-def test_archive_ui_has_checkboxes_and_no_per_item_delete(api_client, tmp_path, monkeypatch):
-    """7. archive UI renders checkboxes, 8. individual delete buttons absent, 9. bulk delete button exists"""
+def test_archive_storage_remains_but_is_hidden_from_ui(api_client, tmp_path, monkeypatch):
     client, _, _, _ = api_client
     import app.main as main_module
 
@@ -582,10 +634,7 @@ def test_archive_ui_has_checkboxes_and_no_per_item_delete(api_client, tmp_path, 
     monkeypatch.setattr(main_module, "AUDIO_ROOT", audio_root)
 
     html = client.get("/").text
-    assert "archive-check" in html
-    assert "archive-bulk-form" in html
-    assert "archive-select-all" in html
-    assert "Видалити вибрані" in html
-    assert "archive/delete-selected" in html
-    # Individual per-item delete should NOT be in the archive section.
-    assert "/delete/archive/" not in html
+    assert (audio_root / "archive" / "test.wav").is_file()
+    assert "archive-check" not in html
+    assert "archive-select-all" not in html
+    assert "Архів аудіо" not in html

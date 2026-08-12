@@ -86,24 +86,33 @@ class KnowledgeService:
         *,
         session_id: str,
         title: str,
+        document_id: str,
+        text_path: str,
+        source_filename: str,
     ) -> dict[str, Any]:
         existing = self.registry.get_by_source(
             KnowledgeSourceType.LIVE_RECORDING,
             session_id,
         )
-        if existing and existing.status == KnowledgeStatus.INDEXED:
-            return existing.to_public_dict()
-
-        knowledge_id = existing.knowledge_id if existing else None
+        knowledge_id = existing.knowledge_id if existing else document_id
         doc = KnowledgeDocument.create(
             title=title,
             source_type=KnowledgeSourceType.LIVE_RECORDING,
             source_ref=session_id,
-            vector_backend="deferred",
+            vector_backend="core",
             knowledge_id=knowledge_id,
             local_assets_present=True,
-            metadata={"recording_id": session_id},
+            metadata={
+                "recording_id": session_id,
+                "document_id": document_id,
+                "text_path": text_path,
+                "source_filename": source_filename,
+                "source": "homelab-core",
+            },
         )
+        doc.document_id = document_id
+        if existing:
+            doc.created_at = existing.created_at
         return self.registry.upsert(doc).to_public_dict()
 
     def reindex_for_live_recording(
