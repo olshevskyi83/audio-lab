@@ -23,6 +23,10 @@ from app.lessons.models import (
     utc_now,
     utc_now_iso,
 )
+from app.lessons.process_control import (
+    CaptureProcessError,
+    MacCaptureProcessController,
+)
 from app.lessons.storage import SessionStore
 
 logger = logging.getLogger("audio_lab.lessons")
@@ -43,6 +47,7 @@ class LessonService:
         capture_client: CaptureAgentClient | None = None,
         core_client: CoreTaskClient | None = None,
         knowledge: KnowledgeService | None = None,
+        process_controller: MacCaptureProcessController | None = None,
     ) -> None:
         self.settings = settings or default_settings
         self.store = store or SessionStore(self.settings.sessions_root)
@@ -54,8 +59,12 @@ class LessonService:
         self.core = core_client or CoreTaskClient(
             base_url=self.settings.core_url,
         )
+        self.process_control = process_controller or MacCaptureProcessController(
+            self.settings
+        )
         self._lock = asyncio.Lock()
         self._poll_task: asyncio.Task[None] | None = None
+        self._agent_bootstrapping = False
 
     def ensure_ready(self) -> None:
         self.store.ensure_root()
@@ -305,6 +314,11 @@ class LessonService:
                     status_code=409,
                 )
 
+            try:
+                await self._ensure_capture_agent_ready()
+            except (CaptureAgentError, CaptureProcessError) as exc:
+                raise LessonError(str(exc), status_code=503) from exc
+
             session = LessonSession.create(title=title, language=language)
             self.store.save(session)
 
@@ -407,11 +421,23 @@ class LessonService:
         # Stop synchronously uploads the final chunk. Release _lock so the
         # upload endpoint can accept and enqueue it without deadlocking.
         stop_warning = None
+        stop_confirmed = False
         try:
             await self.capture.stop(session_id)
+            stop_confirmed = True
         except CaptureAgentError as exc:
             # Capture may already be stopped; continue finalization.
             stop_warning = f"Capture stop warning: {exc}"
+
+        if stop_confirmed:
+            try:
+                await self.process_control.stop_agent_process()
+            except CaptureProcessError:
+                logger.warning(
+                    "Mac Capture Agent process did not stop after session %s",
+                    session_id,
+                    exc_info=True,
+                )
 
         async with self._lock:
             session = self._load(session_id)
@@ -449,6 +475,14 @@ class LessonService:
                 await self.capture.cancel(session_id)
             except CaptureAgentError:
                 pass
+            try:
+                await self.process_control.stop_agent_process()
+            except CaptureProcessError:
+                logger.warning(
+                    "Mac Capture Agent process did not stop after cancellation %s",
+                    session_id,
+                    exc_info=True,
+                )
 
             for chunk in session.chunks:
                 if chunk.whisper_task_id and chunk.status in {
@@ -646,11 +680,54 @@ class LessonService:
                 )
 
     async def agent_status(self) -> dict[str, Any]:
+        if self._agent_bootstrapping:
+            return {"available": True, "status": {"state": "starting"}}
         try:
             payload = await self.capture.status()
             return {"available": True, "status": payload}
         except CaptureAgentError as exc:
+            active = await self.get_active_session()
+            if self.process_control.enabled and (
+                active is None
+                or active["status"]
+                in {
+                    SessionStatus.STOPPING.value,
+                    SessionStatus.PROCESSING.value,
+                    SessionStatus.CANCELLING.value,
+                }
+            ):
+                return {
+                    "available": True,
+                    "status": {"state": "idle", "on_demand": True},
+                }
             return {"available": False, "error": str(exc)}
+
+    async def _ensure_capture_agent_ready(self) -> None:
+        try:
+            await self.capture.health()
+            return
+        except CaptureAgentError:
+            if not self.process_control.enabled:
+                raise
+
+        self._agent_bootstrapping = True
+        try:
+            await self.process_control.start_agent_process()
+            loop = asyncio.get_running_loop()
+            deadline = loop.time() + self.settings.mac_capture_start_timeout_seconds
+            last_error: CaptureAgentError | None = None
+            while loop.time() < deadline:
+                try:
+                    await self.capture.health()
+                    return
+                except CaptureAgentError as exc:
+                    last_error = exc
+                    await asyncio.sleep(0.25)
+            raise CaptureProcessError(
+                "Could not start Mac Capture Agent"
+            ) from last_error
+        finally:
+            self._agent_bootstrapping = False
 
     async def _enqueue_whisper(
         self,

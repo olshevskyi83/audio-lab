@@ -101,26 +101,76 @@ def test_microphone_keeps_browser_blob_upload_pipeline(api_client):
     assert "mediaRecorder.resume" not in html
 
 
-def test_compact_core_and_whisper_status_ready(api_client, monkeypatch):
+@pytest.mark.parametrize(
+    ("whisper", "expected"),
+    [
+        (
+            {
+                "mac_available": True,
+                "mac_running": False,
+                "server_available": True,
+                "server_running": True,
+                "active_backend": None,
+            },
+            {"whisper_mac": "Standby", "whisper_server": "Standby"},
+        ),
+        (
+            {
+                "mac_available": True,
+                "mac_running": True,
+                "server_available": True,
+                "server_running": True,
+                "active_backend": "mac",
+            },
+            {"whisper_mac": "Online", "whisper_server": "Standby"},
+        ),
+        (
+            {
+                "mac_available": False,
+                "mac_running": False,
+                "server_available": True,
+                "server_running": True,
+                "active_backend": "server",
+            },
+            {"whisper_mac": "Offline", "whisper_server": "Online"},
+        ),
+        (
+            {
+                "mac_available": False,
+                "mac_running": False,
+                "server_available": True,
+                "server_running": True,
+                "active_backend": None,
+            },
+            {"whisper_mac": "Offline", "whisper_server": "Standby"},
+        ),
+        (
+            {
+                "mac_available": True,
+                "mac_running": False,
+                "server_available": False,
+                "server_running": False,
+                "active_backend": None,
+            },
+            {"whisper_mac": "Standby", "whisper_server": "Offline"},
+        ),
+    ],
+)
+def test_compact_core_and_whisper_status_mapping(
+    api_client, monkeypatch, whisper, expected
+):
     client, _, _, _ = api_client
     import app.main as main_module
 
     async def ready_status():
         return {
             "status": "ok",
-            "whisper": {
-                "mac_running": True,
-                "server_running": True,
-            },
+            "whisper": whisper,
         }
 
     monkeypatch.setattr(main_module, "core_status", ready_status)
     payload = client.get("/api/system-status").json()
-    assert payload == {
-        "core": "Ready",
-        "whisper_mac": "Ready",
-        "whisper_server": "Ready",
-    }
+    assert payload == {"core": "Ready", **expected}
 
 
 def test_compact_core_and_whisper_status_offline(api_client, monkeypatch):

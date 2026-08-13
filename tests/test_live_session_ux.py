@@ -246,6 +246,14 @@ def test_audio_lab_exposes_only_add_to_knowledge(api_client):
     assert 'id="whisper-server-system-status"' in template
     assert 'class="system-status"' in template
     assert 'class="metric"' not in template
+    assert '.system-status-value.status-good' in template
+    assert '.system-status-value.status-wait' in template
+    assert '.system-status-value.status-off' in template
+    assert 'element.classList.add(statusClass)' in template
+    assert '["Ready", "Online", "Recording"]' in template
+    assert '["Standby", "Starting", "Paused"]' in template
+    assert 'agentState === "idle"\n                                    ? "Ready"' in template
+    assert '"Idle"' not in template
 
 
 def test_incoming_file_is_visible_as_queued(api_client):

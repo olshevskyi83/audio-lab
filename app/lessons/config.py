@@ -47,6 +47,24 @@ class LiveLessonSettings:
             "MAC_CAPTURE_AGENT_TOKEN",
             "",
         )
+        self.mac_capture_process_control = _env(
+            "MAC_CAPTURE_PROCESS_CONTROL", "disabled"
+        ).strip().lower()
+        self.mac_capture_ssh_host = _env("MAC_CAPTURE_SSH_HOST", "").strip()
+        self.mac_capture_ssh_user = _env("MAC_CAPTURE_SSH_USER", "").strip()
+        self.mac_capture_launchd_domain = _env(
+            "MAC_CAPTURE_LAUNCHD_DOMAIN", ""
+        ).strip()
+        self.mac_capture_launchd_label = _env(
+            "MAC_CAPTURE_LAUNCHD_LABEL",
+            "com.homelab.mac-capture-agent",
+        ).strip()
+        self.mac_capture_ssh_connect_timeout_seconds = _env_int(
+            "MAC_CAPTURE_SSH_CONNECT_TIMEOUT_SECONDS", 5
+        )
+        self.mac_capture_start_timeout_seconds = _env_float(
+            "MAC_CAPTURE_START_TIMEOUT_SECONDS", 15.0
+        )
         self.live_upload_token = _env(
             "LIVE_UPLOAD_TOKEN",
             "",

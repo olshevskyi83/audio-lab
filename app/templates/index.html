@@ -103,16 +103,16 @@
             margin-right: 5px;
         }
 
-        .system-status-value.ready {
+        .system-status-value.status-good {
             color: var(--green);
         }
 
-        .system-status-value.warning {
+        .system-status-value.status-wait {
             color: var(--yellow);
         }
 
-        .system-status-value.offline {
-            color: var(--red);
+        .system-status-value.status-off {
+            color: var(--muted);
         }
 
         .panel {
@@ -1986,14 +1986,13 @@
 
         function setCompactStatus(element, label) {
             element.textContent = label;
-            element.classList.remove("ready", "warning", "offline");
-            if (["Ready", "Server", "Mac"].includes(label)) {
-                element.classList.add("ready");
-            } else if (["Recording", "Paused", "Processing"].includes(label)) {
-                element.classList.add("warning");
-            } else {
-                element.classList.add("offline");
-            }
+            element.classList.remove("status-good", "status-wait", "status-off");
+            const statusClass = ["Ready", "Online", "Recording"].includes(label)
+                ? "status-good"
+                : ["Standby", "Starting", "Paused"].includes(label)
+                    ? "status-wait"
+                    : "status-off";
+            element.classList.add(statusClass);
         }
 
         async function refreshSystemStatus() {
@@ -2024,6 +2023,10 @@
                         ? "Recording"
                         : agentState === "paused"
                             ? "Paused"
+                            : agentState === "starting"
+                                ? "Starting"
+                                : agentState === "idle"
+                                    ? "Ready"
                             : "Ready";
                     setCompactStatus(macSystemStatus, stateLabel);
                     liveAgentPill.textContent = "Capture Agent: " + stateLabel;

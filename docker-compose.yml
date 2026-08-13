@@ -7,6 +7,7 @@ services:
     user: "1000:1000"
 
     environment:
+      HOME: /home/homelabuser
       AUDIO_ROOT: /remote/Audio
       CORE_URL: http://ai-gateway:8080
       MAX_UPLOAD_MB: 2048
@@ -14,6 +15,12 @@ services:
       KNOWLEDGE_REGISTRY_PATH: /remote/Audio/knowledge/registry.json
       MAC_CAPTURE_AGENT_URL: ${MAC_CAPTURE_AGENT_URL:-http://host.docker.internal:8011}
       MAC_CAPTURE_AGENT_TOKEN: ${MAC_CAPTURE_AGENT_TOKEN:-}
+      MAC_CAPTURE_PROCESS_CONTROL: ${MAC_CAPTURE_PROCESS_CONTROL:-disabled}
+      MAC_CAPTURE_SSH_HOST: ${MAC_CAPTURE_SSH_HOST:-}
+      MAC_CAPTURE_SSH_USER: ${MAC_CAPTURE_SSH_USER:-}
+      MAC_CAPTURE_LAUNCHD_DOMAIN: ${MAC_CAPTURE_LAUNCHD_DOMAIN:-}
+      MAC_CAPTURE_LAUNCHD_LABEL: ${MAC_CAPTURE_LAUNCHD_LABEL:-com.homelab.mac-capture-agent}
+      MAC_CAPTURE_START_TIMEOUT_SECONDS: ${MAC_CAPTURE_START_TIMEOUT_SECONDS:-15}
       LIVE_UPLOAD_TOKEN: ${LIVE_UPLOAD_TOKEN:-}
       AUDIO_LAB_PUBLIC_URL: ${AUDIO_LAB_PUBLIC_URL:-http://127.0.0.1:3011}
       LIVE_CHUNK_SILENCE_SECONDS: ${LIVE_CHUNK_SILENCE_SECONDS:-5}
@@ -27,7 +34,7 @@ services:
 
     volumes:
       - /home/homelabuser/RemoteDrop/Audio:/remote/Audio
-
+      - /home/homelabuser/.ssh:/home/homelabuser/.ssh:ro
     networks:
       - ai-network
 

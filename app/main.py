@@ -1217,19 +1217,27 @@ async def health() -> dict[str, Any]:
 
 @app.get("/api/system-status")
 async def system_status() -> dict[str, Any]:
-    """Compact Audio Lab readiness derived from the existing Core dashboard."""
+    """Compact, factual user-facing status from the Core dashboard."""
     status = await core_status()
     core_ready = bool(status and status.get("status") == "ok")
     whisper = status.get("whisper") if isinstance(status, dict) else None
     if not isinstance(whisper, dict):
         whisper = {}
+    active_backend = whisper.get("active_backend")
+
+    def backend_state(*, available: object, backend: str) -> str:
+        if available is not True:
+            return "Offline"
+        if active_backend == backend:
+            return "Online"
+        return "Standby"
 
     return {
         "core": "Ready" if core_ready else "Offline",
-        "whisper_mac": (
-            "Ready" if whisper.get("mac_running") else "Offline"
+        "whisper_mac": backend_state(
+            available=whisper.get("mac_available"), backend="mac"
         ),
-        "whisper_server": (
-            "Ready" if whisper.get("server_running") else "Offline"
+        "whisper_server": backend_state(
+            available=whisper.get("server_available"), backend="server"
         ),
     }
