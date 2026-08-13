@@ -198,6 +198,21 @@ final class SessionController: @unchecked Sendable {
         uploadURL = nil
     }
 
+    /// Stops capture during process termination without changing the HTTP API.
+    func shutdown() {
+        lock.lock()
+        defer { lock.unlock() }
+
+        capture?.stop()
+        capture = nil
+        if state == .recording {
+            finalizeLocked(reason: .stop)
+        }
+        state = .idle
+        sessionId = nil
+        uploadURL = nil
+    }
+
     private func requireSession(_ expected: String) throws {
         guard let sessionId, sessionId == expected else {
             throw AgentHTTPError(status: 404, detail: "Unknown session")

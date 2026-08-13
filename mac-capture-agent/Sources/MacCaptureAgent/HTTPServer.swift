@@ -40,6 +40,10 @@ final class AgentHTTPServer: @unchecked Sendable {
         NSLog("Mac Capture Agent listening")
     }
 
+    func stop() {
+        listener.cancel()
+    }
+
     private func handle(_ connection: NWConnection) {
         connection.start(queue: queue)
         receive(on: connection, buffer: Data())

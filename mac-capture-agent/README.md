@@ -63,6 +63,9 @@ MAC_CAPTURE_AGENT_TOKEN='your-shared-token' \
 
 Ensure the Audio Lab server can reach this Mac over LAN/Tailscale at `http://<mac-ip>:8011`.
 
+For an on-demand user LaunchAgent setup, including secret handling and exact manual
+install/control/uninstall commands, see [docs/launchd.md](docs/launchd.md).
+
 On Audio Lab:
 
 ```bash

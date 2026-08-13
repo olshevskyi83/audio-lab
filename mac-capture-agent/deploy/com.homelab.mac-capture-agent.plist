@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.homelab.mac-capture-agent</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/mar3k/Library/Application Support/Homelab/mac-capture-agent/run-mac-capture-agent</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>MAC_CAPTURE_HOST</key>
+        <string>0.0.0.0</string>
+        <key>MAC_CAPTURE_PORT</key>
+        <string>8011</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <false/>
+    <key>KeepAlive</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/mar3k/Library/Logs/Homelab/mac-capture-agent.stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/mar3k/Library/Logs/Homelab/mac-capture-agent.stderr.log</string>
+</dict>
+</plist>
